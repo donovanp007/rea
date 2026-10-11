@@ -11,6 +11,8 @@ planning tools.
 | **Services** | Each Sunday's plan: setlist with keys (changing a key notifies everyone on the service), team by section with suggested people, rehearsal time, publish, remind only the people who haven't replied, and an activity log. |
 | **Practice** | The practice looper below, opened straight from a setlist song. |
 
+The build plan and feature tracker are in [docs/PLAN.md](docs/PLAN.md).
+
 Team data is a sample team stored on this device until accounts and sync are added (see
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). Use **Viewing as** to see the app as a musician,
 section leader or worship leader.
