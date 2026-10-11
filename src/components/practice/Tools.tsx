@@ -28,7 +28,7 @@ export function Tools() {
     setBpmNote(`Tapped ${bpm} BPM. Keep tapping to refine it.`);
   };
 
-  const repText = p.loop ? `${p.reps}${p.repTarget ? ` of ${p.repTarget}` : ""} repeats done${p.trainer ? ` · now ${p.speed}%` : ""}` : "Not looping";
+  const repText = p.loop ? `${p.reps}${p.repTarget ? ` of ${p.repTarget}` : ""} ${p.reps === 1 && !p.repTarget ? "repeat" : "repeats"} done${p.trainer ? ` · now ${p.speed}%` : ""}` : "Not looping";
 
   return (
     <div className="card tools">

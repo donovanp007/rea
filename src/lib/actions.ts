@@ -1,6 +1,6 @@
 "use client";
 import { analyzeAudio, renderDemoWav } from "./audio/analysisClient.ts";
-import { autoLabel, pickBoundaries, sectionsFromOrder, snapToBars } from "./audio/analyze.ts";
+import { autoLabel, pickBoundaries, refineBoundaries, sectionsFromOrder } from "./audio/analyze.ts";
 import { DEMO_LYRICS } from "./audio/demoSong.ts";
 import { headingsOf } from "./music/lyrics.ts";
 import { parseArrangement, resolveSections, sectionAt, type ResolvedSection } from "./music/sections.ts";
@@ -127,7 +127,7 @@ export function redetect(id: string) {
   if (!s) return;
   const raw = pickBoundaries(s.analysis, s.duration, null);
   const t = tempoOf(s);
-  updateSong(id, { sections: autoLabel(s.analysis, s.duration, t ? snapToBars(raw, t).times : raw), source: "auto" });
+  updateSong(id, { sections: autoLabel(s.analysis, s.duration, t ? refineBoundaries(s.analysis, s.duration, raw, t) : raw, s.bpm), source: "auto" });
   engine.setLoop(null);
 }
 

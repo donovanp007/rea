@@ -229,8 +229,8 @@ export function analyzeSamples(mono: Float32Array, sampleRate: number): Analysis
   const raw = pickBoundaries(analysis, duration, null);
   // sections start on bar lines: find where the bars fall, then move each edge onto one
   const tempo = beat ? { bpm: beat.bpm, offset: snapToBars(raw, beat).barOffset } : null;
-  const times = tempo ? snapToBars(raw, tempo).times : raw;
-  const sections = autoLabel(analysis, duration, times);
+  const times = tempo ? refineBoundaries(analysis, duration, raw, tempo) : raw;
+  const sections = autoLabel(analysis, duration, times, tempo?.bpm ?? null);
   return { duration, peaks, tempo, analysis, sections };
 }
 
@@ -270,16 +270,44 @@ export function estimateTempo(flux: Float32Array, frameDur: number): Tempo | nul
     if (ac[lag]! >= ac[lag - 1]! && ac[lag]! >= ac[lag + 1]! && v > best) { best = v; bl = lag; }
   }
   const y0 = ac[bl - 1]!, y1 = ac[bl]!, y2 = ac[bl + 1]!, den = y0 - 2 * y1 + y2;
-  let bpm = 60 / ((bl + (den ? (0.5 * (y0 - y2)) / den : 0)) * frameDur);
-  if (Math.abs(bpm - Math.round(bpm)) < 0.6) bpm = Math.round(bpm);
-  const period = 60 / bpm / frameDur;
-  let bestPhase = 0, bestScore = -1;
-  for (let ph = 0; ph < period; ph += 0.5) {
+  const rough = 60 / ((bl + (den ? (0.5 * (y0 - y2)) / den : 0)) * frameDur);
+  return refineTempo(env, frameDur, rough);
+}
+
+/**
+ * Fine-tunes the tempo to 0.01 BPM by finding the beat grid that lines up with the most
+ * onsets across the whole song. Autocorrelation alone is only accurate to about ±0.5 BPM,
+ * which drifts by a beat or more over a four-minute song.
+ */
+function refineTempo(env: Float32Array, frameDur: number, rough: number): Tempo {
+  const n = env.length;
+  // widen each onset by a frame so near misses still count
+  const e = new Float32Array(n);
+  for (let i = 0; i < n; i++) e[i] = Math.max(env[i - 1] ?? 0, env[i]!, env[i + 1] ?? 0);
+  let best = { bpm: rough, phase: 0, score: -1 };
+  const scoreAt = (bpm: number, phase: number) => {
+    const period = 60 / bpm / frameDur;
     let s = 0;
-    for (let t = ph; t < n; t += period) s += env[Math.round(t)] ?? 0;
-    if (s > bestScore) { bestScore = s; bestPhase = ph; }
+    for (let t = phase; t < n; t += period) s += e[Math.round(t)] ?? 0;
+    return s;
+  };
+  for (let bpm = rough - 1.5; bpm <= rough + 1.5; bpm += 0.05) {
+    const period = 60 / bpm / frameDur;
+    for (let ph = 0; ph < period; ph += 0.5) {
+      const s = scoreAt(bpm, ph);
+      if (s > best.score) best = { bpm, phase: ph, score: s };
+    }
   }
-  return { bpm: +bpm.toFixed(1), offset: +(bestPhase * frameDur).toFixed(3) };
+  for (let bpm = best.bpm - 0.06; bpm <= best.bpm + 0.06; bpm += 0.01) {
+    for (let ph = best.phase - 1; ph <= best.phase + 1; ph += 0.25) {
+      if (ph < 0) continue;
+      const s = scoreAt(bpm, ph);
+      if (s > best.score) best = { bpm, phase: ph, score: s };
+    }
+  }
+  let bpm = best.bpm;
+  if (Math.abs(bpm - Math.round(bpm)) < 0.03) bpm = Math.round(bpm);
+  return { bpm: +bpm.toFixed(2), offset: +(best.phase * frameDur).toFixed(3) };
 }
 
 /**
@@ -303,9 +331,9 @@ function snap(an: Analysis, t: number): number {
 }
 
 /**
- * Assumes 4/4. Picks which beat is the downbeat (the bar phase that the detected edges sit
- * closest to), then moves each edge onto its nearest bar line when it is within a third of a
- * bar. Edges further off are left alone (pickups, tempo changes, rubato).
+ * Assumes 4/4. Picks which beat is the downbeat (the bar phase the detected edges sit closest
+ * to) and moves every edge onto a bar line. An edge in the second half of a bar usually marks
+ * the drum fill or pickup leading into a section, so it moves forward to the next downbeat.
  * `tempo.offset` is any beat; the returned `barOffset` is the first downbeat.
  */
 export function snapToBars(times: number[], tempo: Tempo): { times: number[]; barOffset: number } {
@@ -315,15 +343,74 @@ export function snapToBars(times: number[], tempo: Tempo): { times: number[]; ba
   let barOffset = first, bestCost = Infinity;
   for (let p = 0; p < 4; p++) {
     const origin = first + p * beat;
-    const cost = times.reduce((a, t) => a + Math.min(dist(t, origin), bar / 2), 0);
+    const cost = times.reduce((a, t) => a + dist(t, origin), 0);
     if (cost < bestCost - 1e-9) { bestCost = cost; barOffset = origin; }
   }
   const snapped = times.map((t) => {
-    const k = Math.round((t - barOffset) / bar), line = barOffset + k * bar;
-    return Math.abs(t - line) < bar / 3 && line > 0 ? +line.toFixed(3) : t;
+    const pos = (t - barOffset) / bar, k = Math.floor(pos), frac = pos - k;
+    const line = barOffset + (frac < 0.45 ? k : k + 1) * bar;
+    return line > 0 ? +line.toFixed(3) : t;
   });
   const unique = [...new Set(snapped)].sort((a, b) => a - b);
   return { times: unique, barOffset: +(barOffset % bar).toFixed(3) };
+}
+
+/** Merges fragments shorter than 3½ bars into the neighbour across the weaker boundary. */
+export function mergeShortSections(an: Analysis, duration: number, times: number[], bpm: number): number[] {
+  const bar = 240 / bpm, out = [...times].sort((a, b) => a - b);
+  const strength = (t: number) => {
+    const i = Math.round(t / an.blockDur);
+    return Math.max(an.novelty[i - 1] ?? 0, an.novelty[i] ?? 0, an.novelty[i + 1] ?? 0);
+  };
+  for (let guard = 0; guard < 50; guard++) {
+    const pts = [0, ...out, duration];
+    let k = -1;
+    for (let j = 0; j < pts.length - 1; j++) if ((pts[j + 1]! - pts[j]!) / bar < 3.5) { k = j; break; }
+    if (k < 0) break;
+    // drop the left edge (merge into previous) or the right edge (merge into next)
+    const left = k > 0 ? pts[k]! : null, right = k < pts.length - 2 ? pts[k + 1]! : null;
+    const drop = left === null ? right : right === null ? left : strength(left) <= strength(right) ? left : right;
+    if (drop === null) break;
+    out.splice(out.indexOf(drop), 1);
+  }
+  return out;
+}
+
+/** Bar-line snapping, phrase-length splitting and fragment merging, in that order. */
+export function refineBoundaries(an: Analysis, duration: number, raw: number[], tempo: Tempo): number[] {
+  const snapped = snapToBars(raw, tempo).times;
+  return mergeShortSections(an, duration, splitLongSections(an, duration, snapped, tempo, tempo.offset), tempo.bpm);
+}
+
+/**
+ * Worship and pop sections are built from 4-bar phrases and rarely run past 16–24 bars.
+ * Any stretch longer than 24 bars is split at the strongest change that falls on a 4-bar
+ * phrase boundary, at least 8 bars from either end.
+ */
+export function splitLongSections(an: Analysis, duration: number, times: number[], tempo: Tempo, barOffset: number): number[] {
+  const bar = 240 / tempo.bpm;
+  const out = [...times];
+  const noveltyAt = (t: number) => {
+    const i = Math.round(t / an.blockDur);
+    return Math.max(an.novelty[i - 1] ?? 0, an.novelty[i] ?? 0, an.novelty[i + 1] ?? 0);
+  };
+  for (let guard = 0; guard < 50; guard++) {
+    const pts = [0, ...out.sort((a, b) => a - b), duration];
+    let changed = false;
+    for (let k = 0; k < pts.length - 1; k++) {
+      const a = pts[k]!, b = pts[k + 1]!;
+      if ((b - a) / bar <= 24) continue;
+      const start = a === 0 ? barOffset : a;
+      let best = -1, bestV = -1;
+      for (let m = 8; start + m * bar <= b - 8 * bar + 1e-6; m += 4) {
+        const v = noveltyAt(start + m * bar);
+        if (v > bestV) { bestV = v; best = start + m * bar; }
+      }
+      if (best > 0) { out.push(+best.toFixed(3)); changed = true; break; }
+    }
+    if (!changed) break;
+  }
+  return out.sort((a, b) => a - b);
 }
 
 function localMaxima(an: Analysis, radius: number): { i: number; v: number }[] {
@@ -394,7 +481,7 @@ function segmentVector(an: Analysis, a: number, b: number): { v: Float32Array; e
 }
 
 /** Names segments Intro / Verse / Pre-Chorus / Chorus / Bridge / Outro from how they repeat. */
-export function autoLabel(an: Analysis, duration: number, times: number[]): Section[] {
+export function autoLabel(an: Analysis, duration: number, times: number[], bpm: number | null = null): Section[] {
   const starts = [0, ...times];
   const segs: Seg[] = starts.map((s, k) => ({ start: s, end: starts[k + 1] ?? duration, ...segmentVector(an, s, starts[k + 1] ?? duration), g: -1 }));
   const groups: { v: Float32Array; members: Seg[] }[] = [];
@@ -429,10 +516,27 @@ export function autoLabel(an: Analysis, duration: number, times: number[]): Sect
   const firstChorus = segs.findIndex((s) => s.g === chorusG);
   let verseN = 0, letter = 0;
   const letters: Record<number, string> = {};
+  // A short build straight into a chorus is a pre-chorus, even when its groove matches the
+  // verse (common on drum and rhythm tracks, which carry no chords to tell them apart).
+  const bars = (sg: Seg) => (bpm ? ((sg.end - sg.start) * bpm) / 240 : (sg.end - sg.start) / 2);
+  const shortBuild = (k: number) => {
+    const s = segs[k]!, next = segs[k + 1];
+    return k > 0 && chorusG >= 0 && !!next && next.g === chorusG && s.g !== chorusG && (bpm ? bars(s) <= 6.5 : s.end - s.start < 14);
+  };
+  // a pre-chorus repeats (or leads into the first chorus); a one-off build late on is the bridge
+  const builds = segs.map((_, k) => shortBuild(k));
+  const firstChorusIdx = segs.findIndex((s) => s.g === chorusG);
+  const isPre = (k: number) => builds[k]! && (builds.filter(Boolean).length >= 2 || k < firstChorusIdx);
+  const chorusEnergy = chorusG >= 0 ? gEnergy(groups[chorusG]!) : med;
+  let chorusesSoFar = 0;
   segs.forEach((s, k) => {
+    if (s.g === chorusG && name[k] === null) chorusesSoFar++;
     if (name[k]) return;
     const next = segs[k + 1];
     if (s.g === chorusG) name[k] = "Chorus";
+    else if (isPre(k)) name[k] = "Pre-Chorus";
+    // after two choruses, a quieter section that isn't the chorus is the bridge
+    else if (chorusesSoFar >= 2 && s.energy < chorusEnergy * 0.75 && next) name[k] = "Bridge";
     else if (s.g === verseG) name[k] = `Verse ${++verseN}`;
     else if (firstChorus >= 0 && k > firstChorus && s.start > duration * 0.45 && groups[s.g]!.members.length === 1) name[k] = "Bridge";
     else if (chorusG >= 0 && next && next.g === chorusG && s.end - s.start < 20 && k > 0 && groups[s.g]!.members.length >= 2) name[k] = "Pre-Chorus";

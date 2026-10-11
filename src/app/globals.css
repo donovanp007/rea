@@ -159,6 +159,12 @@ details.fold summary { cursor: pointer; font-weight: 700; }
 .sec-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
 .sec-row .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
 .sec-row .time { display: flex; align-items: center; gap: 4px; }
+@media (max-width: 560px) {
+  .pads { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pad { min-height: 74px; padding: 10px 30px 10px 12px; }
+  .pad b { font-size: 0.98rem; }
+  .pad span { white-space: normal; }
+}
 @media (max-width: 560px) { .sec-row { grid-template-columns: 12px minmax(0, 1fr); } .sec-row .time, .sec-row .acts { grid-column: 2; } }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .field { display: grid; gap: 4px; }
