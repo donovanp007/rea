@@ -1,0 +1,68 @@
+import type { Analysis } from "../audio/analyze.ts";
+import type { Section } from "../music/sections.ts";
+
+export type SectionSource = "auto" | "arrangement" | "edited";
+export type BpmSource = "detected" | "tapped" | "manual";
+
+/** A song in the library. Audio bytes are stored separately, keyed by `id`. */
+export interface Song {
+  id: string;
+  name: string;
+  artist: string;
+  key: string;
+  bpm: number | null;
+  /** Time of the first downbeat, for drawing bar lines and counting bars. */
+  barOffset: number;
+  bpmSource: BpmSource;
+  duration: number;
+  peaks: Float32Array;
+  analysis: Analysis;
+  sections: Section[];
+  source: SectionSource;
+  arrangement: string;
+  lyrics: string;
+  addedAt: number;
+}
+
+export interface SetItem {
+  songId: string;
+  key: string;
+  note: string;
+  addedAt: number;
+  seen: boolean;
+}
+
+/** A service or rehearsal set list. */
+export interface SetList {
+  id: string;
+  name: string;
+  date: string;
+  items: SetItem[];
+  createdAt: number;
+}
+
+/** One entry in the practice queue: a section (or whole song) with its own speed and repeats. */
+export interface QueueItem {
+  id: string;
+  songId: string;
+  label: string;
+  start: number;
+  end: number;
+  speed: number;
+  reps: number;
+}
+
+export type GapMode = "none" | "p1" | "p2" | "c1" | "c2";
+export type LaunchMode = "now" | "end";
+
+export interface Prefs {
+  gap: GapMode;
+  launch: LaunchMode;
+  trainerStart: number;
+  trainerStep: number;
+  trainerTarget: number;
+}
+
+export const DEFAULT_PREFS: Prefs = { gap: "p2", launch: "now", trainerStart: 70, trainerStep: 5, trainerTarget: 100 };
+
+export type View = "practice" | "sets" | "songs" | "queue";
