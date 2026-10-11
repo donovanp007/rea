@@ -6,6 +6,7 @@ export const IconCalendar = ({ size = 20 }: P) => <svg {...base(size)}><rect x="
 export const IconPractice = ({ size = 20 }: P) => <svg {...base(size)}><path d="M3 12h1.5M7 8v8M11 4.5v15M15 8.5v7M19 10.5v3M21 12h0" /></svg>;
 export const IconSets = ({ size = 20 }: P) => <svg {...base(size)}><rect x="4" y="4.5" width="16" height="16" rx="3" /><path d="M8 2.5v4M16 2.5v4M8 11h8M8 15h5" /></svg>;
 export const IconSongs = ({ size = 20 }: P) => <svg {...base(size)}><circle cx="7" cy="17.5" r="2.5" /><circle cx="18" cy="15.5" r="2.5" /><path d="M9.5 17.5V5.5l11-2v12" /></svg>;
+export const IconLive = ({ size = 20 }: P) => <svg {...base(size)}><path d="M5 20V10M9.5 20V6M14 20v-8M18.5 20V4" /><circle cx="5" cy="7" r="1.6" fill="currentColor" /><circle cx="14" cy="9" r="1.6" fill="currentColor" /></svg>;
 export const IconQueue = ({ size = 20 }: P) => <svg {...base(size)}><path d="M4 6h12M4 11h12M4 16h7" /><path d="M16 14.5v6l5-3z" fill="currentColor" /></svg>;
 export const IconLoop = ({ size = 20 }: P) => <svg {...base(size)}><path d="M17 3l3 3-3 3" /><path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H20" /><path d="M7 21l-3-3 3-3" /><path d="M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H4" /></svg>;
 export const IconPrev = ({ size = 20 }: P) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M6 5h2v14H6zM19 5.5v13L9.5 12z" /></svg>;

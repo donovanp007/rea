@@ -20,6 +20,8 @@ export class PlayerEngine {
   private wake: WakeLockLike | null = null;
   private audioCache = new Map<string, Blob>();
   private loadToken = 0;
+  /** Called before practice playback starts, so Live mode can stop. */
+  beforePlay: (() => void) | null = null;
 
   constructor(private store: AppStore, private repo: Repository) {
     const a = new Audio();
@@ -81,6 +83,7 @@ export class PlayerEngine {
     if (!this.p.songId) return;
     try {
       if (this.ctx?.state === "suspended") await this.ctx.resume();
+      this.beforePlay?.();
       await this.audio.play();
       this.keepAwake(true);
     } catch {

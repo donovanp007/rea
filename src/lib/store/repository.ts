@@ -11,6 +11,7 @@ export interface Repository {
   deleteSong(id: string): Promise<void>;
   loadAudio(id: string): Promise<Blob | null>;
   saveAudio(id: string, blob: Blob): Promise<void>;
+  deleteAudio(id: string): Promise<void>;
   loadSets(): Promise<SetList[]>;
   saveSets(sets: SetList[]): Promise<void>;
   loadQueue(): Promise<QueueItem[]>;
@@ -69,6 +70,7 @@ export class LocalRepository implements Repository {
   async deleteSong(id: string) { await this.run("songs", "readwrite", (s) => s.delete(id)); await this.run("audio", "readwrite", (s) => s.delete(id)); }
   async loadAudio(id: string) { return this.run<Blob>("audio", "readonly", (s) => s.get(id) as IDBRequest<Blob>); }
   async saveAudio(id: string, blob: Blob) { await this.run("audio", "readwrite", (s) => s.put(blob, id)); }
+  async deleteAudio(id: string) { await this.run("audio", "readwrite", (s) => s.delete(id)); }
   async loadSets() { return (await this.run<SetList[]>("meta", "readonly", (s) => s.get("sets") as IDBRequest<SetList[]>)) ?? []; }
   async saveSets(sets: SetList[]) { await this.run("meta", "readwrite", (s) => s.put(sets, "sets")); }
   async loadQueue() { return (await this.run<QueueItem[]>("meta", "readonly", (s) => s.get("queue") as IDBRequest<QueueItem[]>)) ?? []; }

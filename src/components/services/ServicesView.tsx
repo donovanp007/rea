@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { addToQueue, openSong, setView } from "@/lib/actions";
+import { openLive } from "@/lib/live/actions";
 import { store, useApp } from "@/lib/store/appStore";
 import { addSetSong, changeKey, copySetlist, keyOptions, moveSetSong, publish, remindPending, removeSetSong, respond, setRehearsal, toggleAssign } from "@/lib/team/actions";
 import { fmtDate } from "@/lib/team/demo";
@@ -75,6 +76,7 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
         </div>
         <div className="row">
           <span className={`chip ${svc.status === "published" ? "new" : ""}`}>{svc.status === "published" ? "Published" : "Draft"}</span>
+          {svc.setlist.some((x) => x.songId) && <button type="button" className="btn" onClick={() => { void openLive(svc.id); setView("live"); }}>Run live</button>}
           {lead && awaiting > 0 && <button type="button" className="btn" onClick={() => remindPending(svc.id)}>Remind {awaiting} who haven't replied</button>}
           {lead && (svc.status === "draft" || proposed > 0) && <button type="button" className="btn primary" onClick={() => publish(svc.id)}>{svc.status === "draft" ? "Publish plan" : `Send ${proposed} new request${proposed === 1 ? "" : "s"}`}</button>}
         </div>

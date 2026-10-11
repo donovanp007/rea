@@ -1,7 +1,6 @@
 "use client";
-import { analyzeAudio, renderDemoWav } from "./audio/analysisClient.ts";
+import { analyzeAudio } from "./audio/analysisClient.ts";
 import { autoLabel, pickBoundaries, refineBoundaries, sectionsFromOrder } from "./audio/analyze.ts";
-import { DEMO_LYRICS } from "./audio/demoSong.ts";
 import { headingsOf } from "./music/lyrics.ts";
 import { parseArrangement, resolveSections, sectionAt, type ResolvedSection } from "./music/sections.ts";
 import { PlayerEngine } from "./player/engine.ts";
@@ -10,6 +9,7 @@ import { LocalRepository, type Repository } from "./store/repository.ts";
 import { DEFAULT_PREFS, type Prefs, type QueueItem, type SavedLoop, type SetItem, type SetList, type Song, type View } from "./store/types.ts";
 import { snapTime } from "./music/grid.ts";
 import { initTeam } from "./team/actions.ts";
+import { ensureDemoMultitrack, initLive } from "./live/actions.ts";
 
 const DAY = 86_400_000;
 let repo: Repository;
@@ -35,32 +35,21 @@ export async function init() {
   engine = new PlayerEngine(store, repo);
   // handle for automated browser tests and debugging from the console
   Object.assign(window, { __practiceLooper: { store, engine } });
+  initLive(repo, engine, { addSong, updateSong, uid });
   const [songs, sets, queue, prefs] = await Promise.all([repo.loadSongs(), repo.loadSets(), repo.loadQueue(), repo.loadPrefs()]);
   let view: View = "home";
   try { view = (localStorage.getItem("pl-view") as View) || "home"; } catch { /* storage unavailable */ }
   store.set({ songs, sets, queue, prefs: { ...DEFAULT_PREFS, ...(prefs ?? {}) }, view: VIEWS.includes(view) ? view : "home", ready: true });
   const builtIn = builtInSongs();
   await initTeam(repo, songs[0]?.id ?? builtIn[0]?.id);
-  if (!songs.length) {
-    if (builtIn.length) {
-      saveSets([{ id: uid(), name: "Sunday service", date: nextSunday(), createdAt: Date.now(), items: [] }]);
-    } else {
-      status("Preparing a demo song…", true);
-      try {
-        const song = await addSong(await renderDemoWav(), "Morning Light (demo)", { artist: "Generated example", key: "G", lyrics: DEMO_LYRICS });
-        if (song) {
-          saveSets([{ id: uid(), name: "Sunday service (example)", date: nextSunday(), createdAt: Date.now(), items: [{ songId: song.id, key: "G", note: "Example", addedAt: Date.now(), seen: false }] }]);
-          status("This is a generated demo song so you can try everything. Add your own with Add songs, or drop audio files on the page.");
-        }
-      } catch {
-        status("Add a song to get started.");
-      }
-    }
-  } else if (songs[0]) await engine.load(songs[0].id);
+  if (!songs.length) saveSets([{ id: uid(), name: "Sunday service", date: nextSunday(), createdAt: Date.now(), items: [] }]);
+  else if (songs[0]) await engine.load(songs[0].id);
   await loadBuiltInSongs(builtIn);
+  // the generated multitrack song is the demo: it shows Practice and Live on first run
+  await ensureDemoMultitrack();
 }
 
-const VIEWS: View[] = ["home", "calendar", "services", "practice", "songs", "queue"];
+const VIEWS: View[] = ["home", "calendar", "services", "live", "practice", "songs", "queue"];
 
 /** Songs bundled with a build of the page (see scripts/build-standalone.mjs). */
 interface BuiltInSong { id: string; file: string; name: string }
@@ -128,6 +117,7 @@ export function updateSong(id: string, patch: Partial<Song>) {
 export async function removeSong(id: string) {
   if (store.state.player.songId === id) engine.unload();
   engine.forget(id);
+  for (const st of store.song(id)?.stems ?? []) await repo.deleteAudio(`stem:${st.id}`);
   await repo.deleteSong(id);
   store.set((s) => ({ songs: s.songs.filter((x) => x.id !== id) }));
   saveQueue(store.state.queue.filter((q) => q.songId !== id));

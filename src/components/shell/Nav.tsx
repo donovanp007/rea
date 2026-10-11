@@ -3,15 +3,16 @@ import { setView } from "@/lib/actions";
 import { useApp } from "@/lib/store/appStore";
 import type { View } from "@/lib/store/types";
 import { unreadFor } from "@/lib/team/logic";
-import { IconCalendar, IconHome, IconPractice, IconQueue, IconSets, IconSongs, Logo } from "./icons";
+import { IconCalendar, IconHome, IconLive, IconPractice, IconQueue, IconSets, IconSongs, Logo } from "./icons";
 import { ViewAs } from "./ViewAs";
 
 const TABS: { view: View; label: string; Icon: (p: { size?: number }) => React.JSX.Element; desktopOnly?: boolean }[] = [
   { view: "home", label: "Home", Icon: IconHome },
   { view: "calendar", label: "Calendar", Icon: IconCalendar },
   { view: "services", label: "Services", Icon: IconSets },
+  { view: "live", label: "Live", Icon: IconLive },
   { view: "practice", label: "Practice", Icon: IconPractice },
-  { view: "songs", label: "Songs", Icon: IconSongs },
+  { view: "songs", label: "Songs", Icon: IconSongs, desktopOnly: true },
   { view: "queue", label: "Queue", Icon: IconQueue, desktopOnly: true },
 ];
 

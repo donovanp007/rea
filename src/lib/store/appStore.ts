@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from "react";
 import { DEFAULT_PREFS, type Prefs, type QueueItem, type SetList, type Song, type View } from "./types.ts";
 import type { TeamState } from "../team/types.ts";
+import type { StemGroup, Strip } from "../tracks/stems.ts";
 
 export interface Loop {
   start: number;
@@ -30,6 +31,26 @@ export interface PlayerState {
   markA: number | null;
 }
 
+export type JumpMode = "bar" | "section" | "now";
+
+/** Live mode: the multitrack player for running a set. */
+export interface LiveState {
+  songId: string | null;
+  playing: boolean;
+  /** Service whose setlist is playing; null plays the whole library. */
+  serviceId: string | null;
+  /** Mixer settings per stem group, kept from song to song. */
+  mix: Partial<Record<StemGroup, Strip>>;
+  /** Click and guide in the left channel, the band in the right (for in-ears + front of house). */
+  split: boolean;
+  /** Start the next song in the set when one ends. */
+  autoNext: boolean;
+  jump: JumpMode;
+  /** A section jump waiting for the next bar or the end of the current section. */
+  pending: { label: string; at: number; to: number } | null;
+  loading: boolean;
+}
+
 export interface AppState {
   ready: boolean;
   songs: Song[];
@@ -42,6 +63,7 @@ export interface AppState {
   player: PlayerState;
   team: TeamState | null;
   openServiceId: string | null;
+  live: LiveState;
 }
 
 const initial: AppState = {
@@ -54,6 +76,7 @@ const initial: AppState = {
   openSetId: null,
   openServiceId: null,
   team: null,
+  live: { songId: null, playing: false, serviceId: null, mix: {}, split: false, autoNext: true, jump: "bar", pending: null, loading: false },
   status: null,
   player: { songId: null, playing: false, waiting: false, loop: null, reps: 0, repTarget: 0, pending: null, speed: 100, trainer: false, queueIndex: null, sectionIdx: -1, markA: null },
 };
@@ -78,6 +101,11 @@ export class AppStore {
     const cur = this.state.player;
     if (Object.entries(patch).every(([k, v]) => cur[k as keyof PlayerState] === v)) return;
     this.set({ player: { ...cur, ...patch } });
+  }
+  setLive(patch: Partial<LiveState>) {
+    const cur = this.state.live;
+    if (Object.entries(patch).every(([k, v]) => cur[k as keyof LiveState] === v)) return;
+    this.set({ live: { ...cur, ...patch } });
   }
   song(id: string | null | undefined): Song | undefined {
     return id ? this.state.songs.find((s) => s.id === id) : undefined;

@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { addFiles, init, player } from "@/lib/actions";
+import { liveEngine } from "@/lib/live/actions";
 import { useApp } from "@/lib/store/appStore";
 import { PracticeView } from "./practice/PracticeView";
 import { QueueView } from "./queue/QueueView";
 import { CalendarView } from "./calendar/CalendarView";
 import { HomeView } from "./home/HomeView";
+import { LiveView } from "./live/LiveView";
 import { ServicesView } from "./services/ServicesView";
 import { Nav } from "./shell/Nav";
 import { Toast } from "./shell/Toast";
@@ -28,6 +30,13 @@ export function App() {
       if (["INPUT", "SELECT", "TEXTAREA"].includes(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
       const p = player();
       if (!p) return;
+      if (view === "live") {
+        const l = liveEngine();
+        if (e.code === "Space") { e.preventDefault(); l.toggle(); }
+        else if (e.key === "ArrowRight") void l.skip(1);
+        else if (e.key === "ArrowLeft") void l.skip(-1);
+        return;
+      }
       if (e.code === "Space") { e.preventDefault(); p.toggle(); return; }
       if (view !== "practice") return;
       if (e.key === "l" || e.key === "L") p.loopCurrent();
@@ -68,12 +77,13 @@ export function App() {
             {view === "home" && <HomeView />}
             {view === "calendar" && <CalendarView />}
             {view === "services" && <ServicesView />}
+            {view === "live" && <LiveView />}
             {view === "songs" && <SongsView />}
             {view === "queue" && <QueueView />}
           </>
         )}
       </main>
-      <TransportDock />
+      {view !== "live" && <TransportDock />}
       <Toast />
       <input
         id={FILE_INPUT_ID}

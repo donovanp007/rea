@@ -60,15 +60,29 @@ function rng(seed: number) {
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296) * 2 - 1;
 }
 
+export type DemoPart = "click" | "drums" | "bass" | "keys" | "pad";
+export const DEMO_PARTS: { part: DemoPart; name: string }[] = [
+  { part: "click", name: "Click" }, { part: "drums", name: "Drums" }, { part: "bass", name: "Bass" }, { part: "keys", name: "Keys" }, { part: "pad", name: "Pad" },
+];
+
 /** Renders the demo song as mono samples. */
 export function renderDemoSong(sampleRate = 22050): Float32Array {
+  return renderDemoParts(sampleRate).mix;
+}
+
+/**
+ * Renders each part of the demo on its own track (stems), plus the mix of the band parts.
+ * The click is a cue track: it is in the stems but not in the mix.
+ */
+export function renderDemoParts(sampleRate = 22050): Record<DemoPart | "mix", Float32Array> {
   const bar = 240 / DEMO_BPM, beat = bar / 4;
   const bars = PLAN.reduce((a, p) => a + p[1], 0);
-  const out = new Float32Array(Math.ceil((bars * bar + 1) * sampleRate));
+  const len = Math.ceil((bars * bar + 1) * sampleRate);
+  const parts = Object.fromEntries(DEMO_PARTS.map((p) => [p.part, new Float32Array(len)])) as Record<DemoPart, Float32Array>;
   const noise = rng(7);
   const sr = sampleRate;
 
-  const tone = (wave: "sine" | "tri" | "saw" | "square", f: number, t0: number, len: number, vol: number, bright = 1) => {
+  const tone = (out: Float32Array, wave: "sine" | "tri" | "saw" | "square", f: number, t0: number, len: number, vol: number, bright = 1) => {
     const a = Math.floor(t0 * sr), n = Math.floor(len * sr);
     let lp = 0;
     const k = Math.min(1, bright); // one-pole low-pass amount for harsh waves
@@ -82,7 +96,7 @@ export function renderDemoSong(sampleRate = 22050): Float32Array {
     }
   };
   const kick = (t0: number, vol: number) => {
-    const a = Math.floor(t0 * sr), n = Math.floor(0.3 * sr);
+    const out = parts.drums, a = Math.floor(t0 * sr), n = Math.floor(0.3 * sr);
     let ph = 0;
     for (let i = 0; i < n && a + i < out.length; i++) {
       const t = i / sr, f = 45 + 75 * Math.exp(-t / 0.05);
@@ -91,7 +105,7 @@ export function renderDemoSong(sampleRate = 22050): Float32Array {
     }
   };
   const hiss = (t0: number, len: number, vol: number, bright: number) => {
-    const a = Math.floor(t0 * sr), n = Math.floor(len * sr);
+    const out = parts.drums, a = Math.floor(t0 * sr), n = Math.floor(len * sr);
     let prev = 0;
     for (let i = 0; i < n && a + i < out.length; i++) {
       const w = noise(), hp = w - prev * (1 - bright);
@@ -99,37 +113,45 @@ export function renderDemoSong(sampleRate = 22050): Float32Array {
       out[a + i]! += hp * vol * Math.exp((-i / sr / len) * 5);
     }
   };
+  const click = (t0: number, accent: boolean) => {
+    const out = parts.click, a = Math.floor(t0 * sr), n = Math.floor(0.05 * sr), f = accent ? 1650 : 1100;
+    for (let i = 0; i < n && a + i < out.length; i++) out[a + i]! += Math.sin((2 * Math.PI * f * i) / sr) * 0.5 * Math.exp(-i / sr / 0.012);
+  };
 
   let t = 0;
   for (const [kind, count, prog] of PLAN) {
     for (let b = 0; b < count; b++, t += bar) {
       const ch = CHORDS[prog[b % prog.length]!]!;
+      for (let k = 0; k < 4; k++) click(t + k * beat, k === 0);
       if (kind === "pad") {
-        ch.forEach((m) => tone("sine", hz(m), t, bar, 0.07));
+        ch.forEach((m) => tone(parts.pad, "sine", hz(m), t, bar, 0.07));
         for (let k = 0; k < 4; k++) hiss(t + k * beat, 0.04, 0.04, 0.9);
       } else if (kind === "verse") {
-        ch.forEach((m) => tone("tri", hz(m), t, bar, 0.06));
-        tone("sine", hz(ch[0]! - 12), t, bar, 0.16);
+        ch.forEach((m) => tone(parts.keys, "tri", hz(m), t, bar, 0.06));
+        tone(parts.bass, "sine", hz(ch[0]! - 12), t, bar, 0.16);
         kick(t, 0.5); kick(t + 2 * beat, 0.5);
         for (let k = 0; k < 4; k++) hiss(t + k * beat, 0.04, 0.07, 0.9);
       } else if (kind === "chorus") {
-        ch.forEach((m) => tone("saw", hz(m + 12), t, bar, 0.045, 0.5));
-        tone("saw", hz(ch[0]! - 12), t, bar, 0.12, 0.1);
+        ch.forEach((m) => tone(parts.keys, "saw", hz(m + 12), t, bar, 0.045, 0.5));
+        tone(parts.bass, "saw", hz(ch[0]! - 12), t, bar, 0.12, 0.1);
         for (let k = 0; k < 4; k++) kick(t + k * beat, 0.8);
         hiss(t + beat, 0.18, 0.3, 0.5); hiss(t + 3 * beat, 0.18, 0.3, 0.5);
         for (let k = 0; k < 8; k++) hiss(t + (k * beat) / 2, 0.05, 0.1, 0.95);
       } else {
-        ch.forEach((m) => tone("square", hz(m), t, bar, 0.04, 0.25));
-        tone("sine", hz(ch[0]! - 24), t, bar, 0.14);
+        ch.forEach((m) => tone(parts.pad, "square", hz(m), t, bar, 0.04, 0.25));
+        tone(parts.bass, "sine", hz(ch[0]! - 24), t, bar, 0.14);
         kick(t, 0.4);
         for (let k = 0; k < 4; k++) hiss(t + k * beat, 0.04, 0.06, 0.9);
       }
     }
   }
+  const mix = new Float32Array(len);
+  for (const p of ["drums", "bass", "keys", "pad"] as const) { const d = parts[p]; for (let i = 0; i < len; i++) mix[i]! += d[i]!; }
   let peak = 0;
-  for (const v of out) peak = Math.max(peak, Math.abs(v));
-  if (peak > 0.95) for (let i = 0; i < out.length; i++) out[i] = (out[i]! / peak) * 0.95;
-  return out;
+  for (const v of mix) peak = Math.max(peak, Math.abs(v));
+  const scale = peak > 0.95 ? 0.95 / peak : 1;
+  if (scale !== 1) for (const d of [mix, parts.drums, parts.bass, parts.keys, parts.pad]) for (let i = 0; i < len; i++) d[i] = d[i]! * scale;
+  return { ...parts, mix };
 }
 
 /** 16-bit PCM WAV bytes for mono samples. */

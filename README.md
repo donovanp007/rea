@@ -9,6 +9,7 @@ planning tools.
 | **Home** | Your next service with one-tap Confirm / Can't make it, your availability as tap-to-change date chips, and updates for things that changed. Leaders see open positions and pending replies. |
 | **Calendar** | Mark dates available, maybe or away with a tap (or every Sunday at once). Leaders get a roster matrix: people × Sundays, coloured by availability; tap a cell to put someone on, with warnings for unavailable, unanswered or double-booked people. |
 | **Services** | Each Sunday's plan: setlist with keys (changing a key notifies everyone on the service), team by section with suggested people, rehearsal time, publish, remind only the people who haven't replied, and an activity log. |
+| **Live** | Run the set with multitrack stems: click, guide, drums, bass… in sync, a mixer with mute and solo, section pads that jump on the next bar, click and guide split to the left channel for in-ears, and the next song starting by itself. Add a song's stems, or make a new song from a folder of stems. |
 | **Practice** | The practice looper below, opened straight from a setlist song. |
 
 The build plan and feature tracker are in [docs/PLAN.md](docs/PLAN.md).

@@ -35,6 +35,7 @@ export function PracticeView({ hidden }: { hidden: boolean }) {
           )}
         </div>
         <div className="row">
+          <button type="button" className="btn ghost mob" onClick={() => setView("songs")}>Songs</button>
           <button type="button" className="btn ghost" onClick={() => setView("queue")}>Queue{queueLen ? ` · ${queueLen}` : ""}</button>
           <AddSongsButton />
         </div>

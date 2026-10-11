@@ -1,5 +1,6 @@
 import type { Analysis } from "../audio/analyze.ts";
 import type { Section } from "../music/sections.ts";
+import type { Stem } from "../tracks/stems.ts";
 
 export type SectionSource = "auto" | "arrangement" | "edited";
 export type BpmSource = "detected" | "tapped" | "manual";
@@ -24,6 +25,8 @@ export interface Song {
   addedAt: number;
   /** Loops the player saved for this song: a fill, a groove, a tricky bar. */
   loops?: SavedLoop[];
+  /** Multitrack stems (click, guide, drums…). Audio bytes are stored under `stem:<id>`. */
+  stems?: Stem[];
 }
 
 export interface SavedLoop {
@@ -77,4 +80,4 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = { gap: "p2", launch: "now", trainerStart: 70, trainerStep: 5, trainerTarget: 100, snap: "beat" };
 
-export type View = "home" | "calendar" | "services" | "practice" | "songs" | "queue";
+export type View = "home" | "calendar" | "services" | "live" | "practice" | "songs" | "queue";
