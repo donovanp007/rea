@@ -10,6 +10,7 @@ import { DEFAULT_PREFS, type Prefs, type QueueItem, type SavedLoop, type SetItem
 import { snapTime } from "./music/grid.ts";
 import { initTeam } from "./team/actions.ts";
 import { ensureDemoMultitrack, initLive } from "./live/actions.ts";
+import { initAbleton } from "./ableton/export.ts";
 
 const DAY = 86_400_000;
 let repo: Repository;
@@ -36,6 +37,7 @@ export async function init() {
   // handle for automated browser tests and debugging from the console
   Object.assign(window, { __practiceLooper: { store, engine } });
   initLive(repo, engine, { addSong, updateSong, uid });
+  initAbleton(repo);
   const [songs, sets, queue, prefs] = await Promise.all([repo.loadSongs(), repo.loadSets(), repo.loadQueue(), repo.loadPrefs()]);
   let view: View = "home";
   try { view = (localStorage.getItem("pl-view") as View) || "home"; } catch { /* storage unavailable */ }

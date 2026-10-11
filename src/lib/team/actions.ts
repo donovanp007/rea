@@ -143,6 +143,10 @@ export function addSetSong(serviceId: string, song: Omit<SetSong, "id">) {
   if (svc.status === "published") t = notify(t, "setlist", "Song added", `${song.title} (${song.key}) · ${fmtDate(svc.date)}`, servingIds(svc), serviceId);
   commit(t);
 }
+/** Edits a setlist song's details that don't need anyone told (tempo, time signature, note). */
+export function updateSetSong(serviceId: string, id: string, patch: Partial<Pick<SetSong, "bpm" | "meter" | "note">>) {
+  commit(editService(T(), serviceId, (s) => ({ ...s, setlist: s.setlist.map((x) => (x.id === id ? { ...x, ...patch } : x)) })));
+}
 export function removeSetSong(serviceId: string, songId: string) {
   const svc = svcOf(serviceId);
   const song = svc?.setlist.find((s) => s.id === songId);

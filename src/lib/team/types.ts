@@ -45,6 +45,10 @@ export interface SetSong {
   /** A library song with audio, so it opens in Practice. */
   songId?: string;
   note?: string;
+  /** Tempo for the click and the Ableton set; defaults to the detected tempo. */
+  bpm?: number;
+  /** Time signature, e.g. "4/4" or "6/8". */
+  meter?: string;
 }
 
 export interface Service {

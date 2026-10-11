@@ -11,6 +11,7 @@ import { useTeam } from "@/lib/team/useTeam";
 import { AVAIL_LABEL, Avatar, STATUS_LABEL } from "../shell/Avatar";
 import { IconPlay, IconTrash } from "../shell/icons";
 import { UpdateRow } from "../home/HomeView";
+import { AbletonExport } from "./AbletonExport";
 
 export function ServicesView() {
   const { team } = useTeam();
@@ -51,7 +52,7 @@ function ServiceList({ team }: { team: TeamState }) {
   );
 }
 
-type Tab = "setlist" | "team" | "rehearsal" | "activity";
+type Tab = "setlist" | "team" | "rehearsal" | "ableton" | "activity";
 
 function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
   const me = memberById(team, team.me)!;
@@ -100,9 +101,9 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
       </div>
 
       <div className="seg" role="tablist" aria-label="Service plan" style={{ width: "fit-content", maxWidth: "100%" }}>
-        {(["setlist", "team", "rehearsal", "activity"] as Tab[]).map((t) => (
+        {(["setlist", "team", "rehearsal", "ableton", "activity"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} aria-pressed={tab === t} onClick={() => setTab(t)}>
-            {t === "setlist" ? "Setlist" : t === "team" ? "Team" : t === "rehearsal" ? "Rehearsal" : `Activity${updates.length ? ` · ${updates.length}` : ""}`}
+            {t === "setlist" ? "Setlist" : t === "team" ? "Team" : t === "rehearsal" ? "Rehearsal" : t === "ableton" ? "Ableton" : `Activity${updates.length ? ` · ${updates.length}` : ""}`}
           </button>
         ))}
       </div>
@@ -197,6 +198,8 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
           </div>
         </section>
       )}
+
+      {tab === "ableton" && <AbletonExport svc={svc} />}
 
       {tab === "activity" && (
         <section className="panel">

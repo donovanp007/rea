@@ -126,7 +126,14 @@ in the browser, so it works without a Mac or Ableton, and can also export to Abl
 | Split outputs: cues left, band right | Built | In-ears and front of house from one stereo output |
 | Section jumps on the next bar or at the end of the section | Built | Pads and a timeline; jumps can be cancelled |
 | Run a service's setlist, auto-start the next song | Built | "Run live" on every plan |
-| Export the service to Ableton (.als): song order, tempo, section markers, stems | Next | Needs one empty Live set saved from Ableton as the template |
+| Export a service to an Ableton project (.zip: .als + Samples + cue sheet) | Built | Waiting on a real test in Ableton with your template |
+| Song order, tempo steps and time-signature changes per song | Built | BPM and time signature editable per setlist song |
+| Locators for every song, section, and a STOP after each song | Built | Snapped to the beat; first downbeat lands on a bar line |
+| Your template's named tracks (Click, Guide…) keep their routing and devices | Built | MIDI and other tracks in the template are kept |
+| Rebuild after changing the order: export again | Built | |
+| Guide-track cue detection: find the spoken "Verse", "Chorus" cues and place locators from them | Next | Most reliable source of section starts when a guide exists |
+| Setlist import with key, BPM and time signature (Planning Center, CSV, paste) | Next | Manual entry works today |
+| Control Ableton from WorshipFlow (jump to a section, loop, next song) over MIDI | Later | Web MIDI → virtual MIDI port → Live's MIDI-mapped locators |
 | Vamp: repeat a section until released | Next | |
 | Generated spoken guide cues ("Verse 2", "Chorus") from the sections | Later | |
 | Foot pedal and MIDI control | Later | Bluetooth page-turner pedals send keys; Web MIDI in Chrome |
@@ -229,6 +236,22 @@ second.
 2. **Delivery.** Web push to the installed app, email digests, and WhatsApp messages for
    critical alerts (WhatsApp Business API, paid per message).
 3. **Chord charts.** Attach PDFs or paste ChordPro; transpose with the key.
+
+## Daily workflows: the quality bar
+
+These are the things people do every week. Each one must work first time, on a phone, in a
+couple of taps, and is checked in a real browser before every release.
+
+| Workflow | Who | Must work like this |
+|---|---|---|
+| Confirm or decline a Sunday | Musician | One tap from Home; leaders told straight away |
+| Mark dates away | Musician | Tap dates on the calendar; leaders told if it clashes with a roster |
+| Fill the roster | Section leader | Available people first; warnings before a clash |
+| Build the setlist with keys | Worship leader | Add, reorder, change key; the team is told about key changes |
+| Prepare a song | Musician | Open from the plan; sections already split; loop and slow down |
+| Run Sunday | Music director | Live mode or Ableton: click and stems in sync, jumps on the bar |
+| Export to Ableton | Music director | One button; opens in Live with tempo, locators and stems in place |
+| Someone cancels | Section leader | Slot flagged, replacement suggested, swap in one tap (M5) |
 
 ## Making it easy to operate
 
