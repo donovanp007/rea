@@ -7,6 +7,7 @@ import { QueueView } from "./queue/QueueView";
 import { SetsView } from "./sets/SetsView";
 import { MiniPlayer } from "./shell/MiniPlayer";
 import { Nav } from "./shell/Nav";
+import { AUDIO_ACCEPT } from "./shell/AddSongsButton";
 import { FILE_INPUT_ID } from "./shell/fileInput";
 import { SongsView } from "./songs/SongsView";
 
@@ -72,7 +73,7 @@ export function App() {
         id={FILE_INPUT_ID}
         className="hidden-file"
         type="file"
-        accept="audio/*"
+        accept={AUDIO_ACCEPT}
         multiple
         onChange={(e) => {
           const files = [...(e.target.files ?? [])];

@@ -43,7 +43,11 @@ async function decodeToMono(blob: Blob): Promise<{ samples: Float32Array; sample
   const bytes = await blob.arrayBuffer();
   // An OfflineAudioContext can decode without a user gesture.
   const ctx = new OfflineAudioContext(1, 1, 44100);
-  const buf = await ctx.decodeAudioData(bytes);
+  // callback form as well: older iPhone Safari never resolves the promise form
+  const buf = await new Promise<AudioBuffer>((resolve, reject) => {
+    const p = ctx.decodeAudioData(bytes, resolve, reject);
+    if (p && typeof p.then === "function") p.then(resolve, reject);
+  });
   const n = buf.length, chs = buf.numberOfChannels, samples = new Float32Array(n);
   for (let c = 0; c < chs; c++) {
     const d = buf.getChannelData(c);

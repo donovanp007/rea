@@ -4,7 +4,7 @@ import { openSong, removeSong } from "@/lib/actions";
 import { formatTime } from "@/lib/music/sections";
 import { useApp } from "@/lib/store/appStore";
 import { ConfirmButton } from "../shell/ConfirmButton";
-import { FILE_INPUT_ID } from "../shell/fileInput";
+import { AddSongsButton } from "../shell/AddSongsButton";
 
 export function SongsView() {
   const songs = useApp((s) => s.songs);
@@ -17,7 +17,7 @@ export function SongsView() {
         <div><h2>Songs</h2><p>Your library. Each song is split into sections when you add it.</p></div>
         <div className="row">
           <input type="search" placeholder="Search songs" aria-label="Search songs" value={q} onChange={(e) => setQ(e.target.value)} />
-          <label className="btn primary" htmlFor={FILE_INPUT_ID}>Add songs</label>
+          <AddSongsButton primary />
         </div>
       </div>
       <ul className="list">

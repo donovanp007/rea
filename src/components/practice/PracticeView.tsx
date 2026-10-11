@@ -1,6 +1,6 @@
 "use client";
 import { useApp } from "@/lib/store/appStore";
-import { FILE_INPUT_ID } from "../shell/fileInput";
+import { AddSongsButton } from "../shell/AddSongsButton";
 import { StatusLine } from "../shell/StatusLine";
 import { LyricsCard } from "./LyricsCard";
 import { Pads } from "./Pads";
@@ -31,7 +31,7 @@ export function PracticeView({ hidden }: { hidden: boolean }) {
             </div>
           )}
         </div>
-        <label className="btn" htmlFor={FILE_INPUT_ID}>Add songs</label>
+        <AddSongsButton />
       </div>
       <div className="stage">
         <Waveform active={active} />
