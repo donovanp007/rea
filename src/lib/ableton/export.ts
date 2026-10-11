@@ -134,8 +134,26 @@ export async function buildAbletonProject(svc: Service, opts: SessionOptions, on
   return { blob: new Blob(parts as BlobPart[], { type: "application/zip" }), name: `${name}.zip`, session };
 }
 
-/** Starts a download of a blob. */
-export function download(blob: Blob, name: string) {
+interface ClaudeHost { use(name: "downloads"): Promise<{ save(r: { filename: string; data: Blob }): Promise<{ status: string }> } | null> }
+
+/**
+ * Hands a file to the viewer. Inside the Claude app the page can't start downloads itself, so it
+ * asks the app to save the file (the viewer confirms); everywhere else it's a normal download.
+ * Resolves false if the viewer declined.
+ */
+export async function download(blob: Blob, name: string): Promise<boolean> {
+  const host = (window as unknown as { claude?: ClaudeHost }).claude;
+  if (host?.use) {
+    const dl = await host.use("downloads").catch(() => null);
+    if (dl) {
+      try { await dl.save({ filename: name, data: blob }); return true; } catch (e) {
+        const code = (e as { code?: string }).code;
+        if (code === "declined") return false;
+        if (code === "too_large") throw new Error("That project is too big to save from here. Export from the installed app.");
+        // any other refusal: fall back to a plain download below
+      }
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -144,4 +162,5 @@ export function download(blob: Blob, name: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return true;
 }

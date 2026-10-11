@@ -43,9 +43,10 @@ export function AbletonExport({ svc }: { svc: Service }) {
     setError(null);
     try {
       const { blob, name } = await buildAbletonProject(svc, opts, setBusy);
+      setBusy("Saving…");
+      const saved = await download(blob, name);
       setBusy(null);
-      download(blob, name);
-      store.set({ status: { text: `Downloaded ${name}. Unzip it and open the .als file in Ableton.`, busy: false } });
+      if (saved) store.set({ status: { text: `Downloaded ${name}. Unzip it and open the .als file in Ableton.`, busy: false } });
     } catch (e) {
       setBusy(null);
       setError(e instanceof Error ? e.message : "The export failed.");
@@ -123,7 +124,7 @@ export function AbletonExport({ svc }: { svc: Service }) {
           <div className="row">
             <button type="button" className="btn primary" disabled={!tpl || !playable.length || !!busy} onClick={() => void onExport()}>{busy ? <><i className="spin" aria-hidden /> {busy}</> : "Download Ableton project"}</button>
           </div>
-          <p className="note">You get a .zip with the .als set, every stem in its Samples folder and a cue sheet. Unzip it anywhere and open the .als. Downloads work in the installed app; the Claude preview blocks them.</p>
+          <p className="note">You get a .zip with the .als set, every stem in its Samples folder and a cue sheet. Unzip it anywhere and open the .als. In the Claude app you'll be asked to confirm the save.</p>
         </div>
       </div>
     </section>
