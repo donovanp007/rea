@@ -10,23 +10,32 @@ export interface ResolvedSection extends Section {
   idx: number;
 }
 
-export type SectionType = "intro" | "verse" | "pre" | "chorus" | "bridge" | "tag" | "inst" | "outro" | "other";
+export type SectionType = "intro" | "verse" | "pre" | "chorus" | "post" | "bridge" | "vamp" | "tag" | "inst" | "outro" | "other";
+
+/** Every section name the app offers when naming or renaming a section. */
+export const SECTION_NAMES = [
+  "Intro", "Verse 1", "Verse 2", "Verse 3", "Verse 4", "Pre-Chorus", "Pre-Chorus 2", "Chorus", "Chorus 2", "Chorus 3",
+  "Post-Chorus", "Bridge", "Bridge 1", "Bridge 2", "Vamp", "Tag", "Refrain", "Interlude", "Instrumental", "Turnaround",
+  "Breakdown", "Build", "Solo", "Ending", "Outro",
+] as const;
 
 /** Classifies a free-text section label so it can be coloured and matched to lyrics. */
 export function typeOf(label: string): SectionType {
   const l = (label || "").toLowerCase();
+  if (/post/.test(l)) return "post";
   if (/pre/.test(l)) return "pre";
-  if (/chorus/.test(l)) return "chorus";
+  if (/chorus|refrain/.test(l)) return "chorus";
   if (/verse/.test(l)) return "verse";
   if (/bridge/.test(l)) return "bridge";
+  if (/vamp/.test(l)) return "vamp";
   if (/intro/.test(l)) return "intro";
   if (/outro|ending|^end/.test(l)) return "outro";
   if (/tag/.test(l)) return "tag";
-  if (/inst|interlude|turn|solo|vamp/.test(l)) return "inst";
+  if (/inst|interlude|turn|solo|break|build/.test(l)) return "inst";
   return "other";
 }
 
-const SHORT: Record<SectionType, string> = { intro: "I", verse: "V", pre: "PC", chorus: "C", bridge: "B", tag: "T", inst: "In", outro: "O", other: "•" };
+const SHORT: Record<SectionType, string> = { intro: "I", verse: "V", pre: "PC", chorus: "C", post: "PoC", bridge: "B", vamp: "Vm", tag: "T", inst: "In", outro: "O", other: "•" };
 
 /** Planning Center style shorthand for a label, e.g. "Verse 2" → "V2". */
 export function shortLabel(label: string): string {
@@ -43,12 +52,21 @@ export function expandToken(tok: string): string | null {
   let m: RegExpMatchArray | null;
   if ((m = l.match(/^(?:v|vs|verse)\s*(\d*)$/))) return "Verse" + num(m);
   if ((m = l.match(/^(?:pc|pre|pre-chorus|prechorus|pre chorus)\s*(\d*)$/))) return "Pre-Chorus" + num(m);
+  if ((m = l.match(/^(?:poc|pch|post|post-chorus|postchorus|post chorus)\s*(\d*)$/))) return "Post-Chorus" + num(m);
   if ((m = l.match(/^(?:c|ch|cho|chorus)\s*(\d*)$/))) return "Chorus" + num(m);
   if ((m = l.match(/^(?:b|br|bridge)\s*(\d*)$/))) return "Bridge" + num(m);
   if (/^(?:i|in|intro)$/.test(l)) return "Intro";
-  if (/^(?:o|out|outro|end|ending)$/.test(l)) return "Outro";
+  if (/^(?:o|out|outro)$/.test(l)) return "Outro";
   if ((m = l.match(/^(?:t|tag)\s*(\d*)$/))) return "Tag" + num(m);
-  if (/^(?:inst|instrumental|interlude|turn|turnaround|solo)$/.test(l)) return "Instrumental";
+  if ((m = l.match(/^(?:vm|vamp)\s*(\d*)$/))) return "Vamp" + num(m);
+  if (/^(?:inst|instrumental)$/.test(l)) return "Instrumental";
+  if (/^(?:int|interlude)$/.test(l)) return "Interlude";
+  if (/^(?:turn|turnaround|ta)$/.test(l)) return "Turnaround";
+  if (/^(?:bd|breakdown)$/.test(l)) return "Breakdown";
+  if (/^(?:build|bu)$/.test(l)) return "Build";
+  if (/^(?:ref|refrain)$/.test(l)) return "Refrain";
+  if (/^solo$/.test(l)) return "Solo";
+  if (/^(?:ending|end)$/.test(l)) return "Ending";
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 

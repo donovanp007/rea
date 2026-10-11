@@ -6,7 +6,7 @@ export interface LyricBlock {
   text: string;
 }
 
-const HEADING = /^\s*[[(]?\s*(intro|verse|vs|pre[- ]?chorus|chorus|bridge|tag|outro|ending|interlude|instrumental|turnaround|vamp)\s*(\d*)\s*[\])]?\s*:?\s*$/i;
+const HEADING = /^\s*[[(]?\s*(intro|verse|vs|pre[- ]?chorus|post[- ]?chorus|chorus|refrain|bridge|tag|outro|ending|interlude|instrumental|turnaround|vamp|breakdown|build|solo)\s*(\d*)\s*[\])]?\s*:?\s*$/i;
 
 /** Splits pasted lyrics or a chord chart into blocks at lines like "Verse 1", "[Chorus]" or "Bridge:". */
 export function parseLyrics(text: string): LyricBlock[] {

@@ -9,7 +9,11 @@ const waiting = new Map<number, { resolve: (v: unknown) => void; reject: (e: Err
 function getWorker(): Worker | null {
   if (worker !== undefined) return worker;
   try {
-    worker = new Worker(new URL("./analysis.worker.ts", import.meta.url), { type: "module" });
+    // the single-file build inlines the worker's code; the Next.js app loads it as a module
+    const inline = (globalThis as { __PL_WORKER_SRC__?: string }).__PL_WORKER_SRC__;
+    worker = inline
+      ? new Worker(URL.createObjectURL(new Blob([inline], { type: "text/javascript" })))
+      : new Worker(new URL("./analysis.worker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (e: MessageEvent<{ id: number; ok: boolean; error?: string }>) => {
       const w = waiting.get(e.data.id);
       if (!w) return;

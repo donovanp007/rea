@@ -18,7 +18,7 @@ export interface Repository {
   savePrefs(prefs: Prefs): Promise<void>;
 }
 
-const DB_NAME = "practice-looper";
+const DB_NAME = "practice-looper-app";
 const DB_VERSION = 1;
 
 function open(): Promise<IDBDatabase | null> {

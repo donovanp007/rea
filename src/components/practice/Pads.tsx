@@ -15,7 +15,6 @@ export function Pads({ active }: { active: boolean }) {
   const launch = useApp((s) => s.prefs.launch);
   const box = useRef<HTMLDivElement>(null);
 
-  // progress bar along the bottom of the playing pad
   useEffect(() => {
     if (!active) return;
     let raf = 0;
@@ -30,21 +29,20 @@ export function Pads({ active }: { active: boolean }) {
     return () => cancelAnimationFrame(raf);
   }, [active, sections, current]);
 
+  if (!song) return null;
   return (
-    <div className="card">
-      <div className="row between">
+    <section className="panel" aria-label="Sections">
+      <div className="panel-h">
         <h3>Sections</h3>
-        <div className="row">
-          <label className="eyebrow" htmlFor="launch">Tapping a pad while playing</label>
-          <select id="launch" value={launch} onChange={(e) => setPrefs({ launch: e.target.value as LaunchMode })}>
-            <option value="now">Jumps now</option>
-            <option value="end">Waits for end of section</option>
-          </select>
+        <div className="seg" role="group" aria-label="When you tap a pad while playing">
+          {(["now", "end"] as LaunchMode[]).map((m) => (
+            <button key={m} type="button" aria-pressed={launch === m} onClick={() => setPrefs({ launch: m })} title={m === "now" ? "Jump straight to the section" : "Start it when the current section ends"}>
+              {m === "now" ? "Jump now" : "At section end"}
+            </button>
+          ))}
         </div>
       </div>
-      {!song ? (
-        <p className="empty">Add a song and its sections appear here as pads.</p>
-      ) : (
+      <div className="panel-b">
         <div className="pads" ref={box}>
           {sections.map((s) => {
             const looping = loop?.idx === s.idx, playing = current === s.idx, bars = barsFor(s.end - s.start, song.bpm);
@@ -59,17 +57,16 @@ export function Pads({ active }: { active: boolean }) {
                   onClick={() => player().launch(s)}
                 >
                   <b>{s.label}</b>
-                  <span className="mono">{formatTime(s.start)} · {bars ? `${bars} ${bars === 1 ? "bar" : "bars"}` : `${Math.round(s.end - s.start)}s`}</span>
+                  <span><em className="at">{formatTime(s.start)} · </em>{bars ? `${bars} bar${bars === 1 ? "" : "s"}` : `${Math.round(s.end - s.start)}s`}</span>
                   <i className="prog" data-idx={s.idx} />
                   {looping ? <span className="tag">LOOP</span> : pending?.idx === s.idx ? <span className="tag next">NEXT</span> : null}
                 </button>
-                <button type="button" className="padadd" aria-label={`Add ${s.label} to queue`} title={`Add ${s.label} to queue`} onClick={() => addToQueue(song.id, s)}>＋</button>
+                <button type="button" className="padadd" aria-label={`Add ${s.label} to queue`} title={`Add ${s.label} to queue`} onClick={() => addToQueue(song.id, s)}>+</button>
               </div>
             );
           })}
         </div>
-      )}
-      <p className="note">Tap a pad to loop it. Tap again to stop looping. ＋ adds it to your queue.</p>
-    </div>
+      </div>
+    </section>
   );
 }

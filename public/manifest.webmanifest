@@ -4,7 +4,7 @@
   "description": "Loop and slow down song sections to learn your band parts.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c1117",
-  "theme_color": "#0c1117",
+  "background_color": "#0a0d13",
+  "theme_color": "#0a0d13",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

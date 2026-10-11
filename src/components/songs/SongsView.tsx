@@ -14,7 +14,7 @@ export function SongsView() {
   return (
     <section className="view" aria-label="Songs">
       <div className="vhead">
-        <div><h2>Songs</h2><p>Your library. Each song is split into sections when you add it.</p></div>
+        <div><h1>Songs</h1><p>Your library. Each song is split into sections when you add it.</p></div>
         <div className="row">
           <input type="search" placeholder="Search songs" aria-label="Search songs" value={q} onChange={(e) => setQ(e.target.value)} />
           <AddSongsButton primary />

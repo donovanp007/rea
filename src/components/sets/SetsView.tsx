@@ -21,7 +21,7 @@ function SetList({ sets }: { sets: SetList[] }) {
   return (
     <section className="view" aria-label="Set lists">
       <div className="vhead">
-        <div><h2>Set lists</h2><p>Plan what the band plays each service. Songs added in the last week show as New.</p></div>
+        <div><h1>Set lists</h1><p>Plan what the band plays each service. Songs added in the last week show as New.</p></div>
         <button type="button" className="btn primary" onClick={newSet}>New set</button>
       </div>
       {!sets.length ? (
@@ -51,7 +51,7 @@ function SetDetail({ set }: { set: SetList }) {
   return (
     <section className="view" aria-label={set.name}>
       <div className="vhead">
-        <div><h2>{set.name}</h2><p>{prettyDate(set.date)} · {set.items.length} {set.items.length === 1 ? "song" : "songs"}</p></div>
+        <div><h1>{set.name}</h1><p>{prettyDate(set.date)} · {set.items.length} {set.items.length === 1 ? "song" : "songs"}</p></div>
         <div className="row">
           <button type="button" className="btn ghost" onClick={() => openSet(null)}>← All sets</button>
           <button type="button" className="btn primary" disabled={!set.items.length} onClick={() => queueSet(set.id)}>Queue whole set</button>

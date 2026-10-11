@@ -13,7 +13,7 @@ export function QueueView() {
   return (
     <section className="view" aria-label="Practice queue">
       <div className="vhead">
-        <div><h2>Practice queue</h2><p>Each part loops the number of times you set, at its own speed, then moves on.</p></div>
+        <div><h1>Practice queue</h1><p>Each part loops the number of times you set, at its own speed, then moves on.</p></div>
         <div className="row">
           <ConfirmButton label="Clear" confirmLabel="Tap again to clear" className="btn ghost" onConfirm={clearQueue} />
           <button type="button" className="btn primary" disabled={!queue.length} onClick={() => (index !== null ? player().stopQueue() : void playQueue(0))}>{index !== null ? "Stop queue" : "Play queue"}</button>

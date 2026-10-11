@@ -32,3 +32,10 @@ test("keeps unlabelled text and ignores empty input", () => {
   assert.deepEqual(parseLyrics("Just some words\nmore"), [{ label: "", text: "Just some words\nmore" }]);
   assert.deepEqual(parseLyrics(""), []);
 });
+
+test("recognises vamp, post-chorus and numbered bridge headings", () => {
+  const sheet = "Bridge 1\nOne\n\nBridge 2\nTwo\n\nVamp\nAgain\n\nPost-Chorus\nOh";
+  assert.deepEqual(headingsOf(sheet), ["Bridge 1", "Bridge 2", "Vamp", "Post-Chorus"]);
+  assert.equal(lyricsFor(sheet, "Bridge 2")!.text, "Two");
+  assert.equal(lyricsFor(sheet, "Vamp 2")!.text, "Again");
+});

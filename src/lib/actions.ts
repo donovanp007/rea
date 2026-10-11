@@ -7,7 +7,8 @@ import { parseArrangement, resolveSections, sectionAt, type ResolvedSection } fr
 import { PlayerEngine } from "./player/engine.ts";
 import { store } from "./store/appStore.ts";
 import { LocalRepository, type Repository } from "./store/repository.ts";
-import { DEFAULT_PREFS, type Prefs, type QueueItem, type SetItem, type SetList, type Song, type View } from "./store/types.ts";
+import { DEFAULT_PREFS, type Prefs, type QueueItem, type SavedLoop, type SetItem, type SetList, type Song, type View } from "./store/types.ts";
+import { snapTime } from "./music/grid.ts";
 
 const DAY = 86_400_000;
 let repo: Repository;
@@ -37,17 +38,47 @@ export async function init() {
   let view: View = "practice";
   try { view = (localStorage.getItem("pl-view") as View) || "practice"; } catch { /* storage unavailable */ }
   store.set({ songs, sets, queue, prefs: { ...DEFAULT_PREFS, ...(prefs ?? {}) }, view: ["practice", "sets", "songs", "queue"].includes(view) ? view : "practice", ready: true });
-  if (songs[0]) { await engine.load(songs[0].id); return; }
-  status("Preparing a demo song…", true);
-  try {
-    const song = await addSong(await renderDemoWav(), "Morning Light (demo)", { artist: "Generated example", key: "G", lyrics: DEMO_LYRICS });
-    if (song) {
-      const set: SetList = { id: uid(), name: "Sunday service (example)", date: nextSunday(), createdAt: Date.now(), items: [{ songId: song.id, key: "G", note: "Example", addedAt: Date.now(), seen: false }] };
-      saveSets([set]);
-      status("This is a generated demo song so you can try everything. Add your own songs with Add songs, or drop audio files on the page.");
+  const builtIn = builtInSongs();
+  if (!songs.length) {
+    if (builtIn.length) {
+      saveSets([{ id: uid(), name: "Sunday service", date: nextSunday(), createdAt: Date.now(), items: [] }]);
+    } else {
+      status("Preparing a demo song…", true);
+      try {
+        const song = await addSong(await renderDemoWav(), "Morning Light (demo)", { artist: "Generated example", key: "G", lyrics: DEMO_LYRICS });
+        if (song) {
+          saveSets([{ id: uid(), name: "Sunday service (example)", date: nextSunday(), createdAt: Date.now(), items: [{ songId: song.id, key: "G", note: "Example", addedAt: Date.now(), seen: false }] }]);
+          status("This is a generated demo song so you can try everything. Add your own with Add songs, or drop audio files on the page.");
+        }
+      } catch {
+        status("Add a song to get started.");
+      }
     }
-  } catch {
-    status("Add a song to get started.");
+  } else if (songs[0]) await engine.load(songs[0].id);
+  await loadBuiltInSongs(builtIn);
+}
+
+/** Songs bundled with a build of the page (see scripts/build-standalone.mjs). */
+interface BuiltInSong { id: string; file: string; name: string }
+function builtInSongs(): BuiltInSong[] {
+  const list = (window as unknown as { __PL_BUILT_IN__?: unknown }).__PL_BUILT_IN__;
+  return Array.isArray(list) ? (list as BuiltInSong[]).filter((b) => b && typeof b.id === "string" && typeof b.file === "string") : [];
+}
+async function loadBuiltInSongs(list: BuiltInSong[]) {
+  for (const b of list) {
+    if (store.song(b.id)) { await engine.load(b.id); continue; }
+    status(`Loading “${b.name}” and finding its sections… (first time only)`, true);
+    try {
+      const res = await fetch(b.file);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const song = await addSong(await res.blob(), b.name, { id: b.id });
+      const set = store.state.sets[0];
+      if (song && set && !set.items.some((it) => it.songId === song.id)) {
+        editSet(set.id, (st) => ({ ...st, items: [{ songId: song.id, key: "", note: "", addedAt: Date.now(), seen: false }, ...st.items] }));
+      }
+    } catch {
+      status(`Couldn't load “${b.name}”. Check your connection and reopen the page.`);
+    }
   }
 }
 
@@ -153,6 +184,69 @@ export function splitAt(id: string, t: number): boolean {
   if (!cur || t - cur.start < 1 || cur.end - t < 1) return false;
   editSections(id, (secs) => { secs.splice(cur.idx + 1, 0, { start: +t.toFixed(3), label: "New section" }); return secs; });
   return true;
+}
+
+/* ---------- loops & markers ---------- */
+const gridOf = (s: Song) => ({ bpm: s.bpm, barOffset: s.barOffset });
+
+/** Loops any stretch, snapped to the beat grid per the snap setting. */
+export function loopRange(a: number, b: number) {
+  const s = store.song(store.state.player.songId);
+  if (!s) return;
+  const snap = store.state.prefs.snap;
+  let start = snapTime(Math.min(a, b), gridOf(s), snap), end = snapTime(Math.max(a, b), gridOf(s), snap);
+  if (end - start < 0.2) end = Math.min(s.duration, start + (s.bpm ? 60 / s.bpm : 0.5));
+  engine.setLoop({ start, end: Math.min(end, s.duration), label: "Custom loop", idx: null });
+  store.setPlayer({ markA: null });
+}
+
+/**
+ * A/B markers, like a hardware looper. With a loop running, A and B move its start and end.
+ * Without one, Set A marks the start and the song keeps playing; Set B then closes the loop.
+ */
+export function setMarker(which: "a" | "b", t: number) {
+  const s = store.song(store.state.player.songId);
+  if (!s) return;
+  const { loop, markA } = store.state.player;
+  const at = snapTime(t, gridOf(s), store.state.prefs.snap);
+  const bar = s.bpm ? 240 / s.bpm : 2;
+  if (which === "a") {
+    if (loop && loop.end > at + 0.2) loopRange(at, loop.end);
+    else { if (loop) engine.setLoop(null); store.setPlayer({ markA: at }); status("Start marked. Press Set B where the loop should end."); }
+    return;
+  }
+  if (markA !== null && at > markA + 0.2) { loopRange(markA, at); store.setPlayer({ markA: null }); return; }
+  if (loop && loop.start < at - 0.2) { loopRange(loop.start, at); return; }
+  loopRange(Math.max(0, at - bar), at);
+  store.setPlayer({ markA: null });
+}
+
+export function saveCurrentLoop(): SavedLoop | null {
+  const s = store.song(store.state.player.songId);
+  const loop = store.state.player.loop;
+  if (!s || !loop) return null;
+  const sec = sectionAt(resolveSections(s.sections, s.duration), loop.start);
+  const n = (s.loops ?? []).length + 1;
+  const name = loop.idx !== null ? loop.label : `${sec?.label ?? "Loop"} · part ${n}`;
+  const saved: SavedLoop = { id: uid(), name, start: loop.start, end: loop.end, speed: store.state.player.speed };
+  updateSong(s.id, { loops: [...(s.loops ?? []), saved] });
+  status(`Saved “${name}”. It's in Saved loops for this song.`);
+  return saved;
+}
+export const renameLoop = (songId: string, id: string, name: string) => {
+  const s = store.song(songId);
+  if (s) updateSong(songId, { loops: (s.loops ?? []).map((l) => (l.id === id ? { ...l, name: name.trim() || l.name } : l)) });
+};
+export const deleteLoop = (songId: string, id: string) => {
+  const s = store.song(songId);
+  if (s) updateSong(songId, { loops: (s.loops ?? []).filter((l) => l.id !== id) });
+};
+export async function playSavedLoop(songId: string, l: SavedLoop) {
+  store.setPlayer({ queueIndex: null });
+  if (!(await engine.load(songId, true))) return;
+  engine.setSpeed(l.speed);
+  engine.setLoop({ start: l.start, end: l.end, label: l.name, idx: null });
+  await engine.play();
 }
 
 /* ---------- sets ---------- */

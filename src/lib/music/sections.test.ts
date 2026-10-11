@@ -37,3 +37,13 @@ test("formats times and counts bars", () => {
   assert.equal(barsFor(16, 120), 8);
   assert.equal(barsFor(16, null), null);
 });
+
+test("knows the full worship section vocabulary", () => {
+  assert.deepEqual(parseArrangement("I, V1, PC, C, PoC, V2, PC, C, B1, B2, Vamp, Tag, Turn, Breakdown, Build, End, O"),
+    ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Post-Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge 1", "Bridge 2", "Vamp", "Tag", "Turnaround", "Breakdown", "Build", "Ending", "Outro"]);
+  assert.equal(typeOf("Post-Chorus"), "post");
+  assert.equal(typeOf("Vamp"), "vamp");
+  assert.equal(typeOf("Bridge 2"), "bridge");
+  assert.equal(typeOf("Breakdown"), "inst");
+  assert.equal(typeOf("Refrain"), "chorus");
+});

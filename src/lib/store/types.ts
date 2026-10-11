@@ -22,6 +22,16 @@ export interface Song {
   arrangement: string;
   lyrics: string;
   addedAt: number;
+  /** Loops the player saved for this song: a fill, a groove, a tricky bar. */
+  loops?: SavedLoop[];
+}
+
+export interface SavedLoop {
+  id: string;
+  name: string;
+  start: number;
+  end: number;
+  speed: number;
 }
 
 export interface SetItem {
@@ -54,6 +64,7 @@ export interface QueueItem {
 
 export type GapMode = "none" | "p1" | "p2" | "c1" | "c2";
 export type LaunchMode = "now" | "end";
+export type SnapMode = "bar" | "beat" | "off";
 
 export interface Prefs {
   gap: GapMode;
@@ -61,8 +72,9 @@ export interface Prefs {
   trainerStart: number;
   trainerStep: number;
   trainerTarget: number;
+  snap: SnapMode;
 }
 
-export const DEFAULT_PREFS: Prefs = { gap: "p2", launch: "now", trainerStart: 70, trainerStep: 5, trainerTarget: 100 };
+export const DEFAULT_PREFS: Prefs = { gap: "p2", launch: "now", trainerStart: 70, trainerStep: 5, trainerTarget: 100, snap: "beat" };
 
 export type View = "practice" | "sets" | "songs" | "queue";

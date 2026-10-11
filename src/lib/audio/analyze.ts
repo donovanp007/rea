@@ -89,9 +89,11 @@ export function analyzeSamples(mono: Float32Array, sampleRate: number): Analysis
   const { x, fs } = downsample(mono, sampleRate);
   const n = x.length;
 
-  const peaks = new Float32Array(PEAK_COUNT);
-  const per = Math.max(1, Math.floor(n / PEAK_COUNT));
-  for (let p = 0; p < PEAK_COUNT; p++) {
+  // ~60 peaks per second so the waveform stays detailed when zoomed in to a single fill
+  const peakCount = Math.max(PEAK_COUNT, Math.round(duration * 60));
+  const peaks = new Float32Array(peakCount);
+  const per = Math.max(1, Math.floor(n / peakCount));
+  for (let p = 0; p < peakCount; p++) {
     let m = 0;
     for (let i = 0, o = p * per; i < per && o + i < n; i++) m = Math.max(m, Math.abs(x[o + i]!));
     peaks[p] = m;

@@ -5,8 +5,9 @@ import { useApp } from "@/lib/store/appStore";
 import { PracticeView } from "./practice/PracticeView";
 import { QueueView } from "./queue/QueueView";
 import { SetsView } from "./sets/SetsView";
-import { MiniPlayer } from "./shell/MiniPlayer";
 import { Nav } from "./shell/Nav";
+import { Toast } from "./shell/Toast";
+import { TransportDock } from "./shell/TransportDock";
 import { AUDIO_ACCEPT } from "./shell/AddSongsButton";
 import { FILE_INPUT_ID } from "./shell/fileInput";
 import { SongsView } from "./songs/SongsView";
@@ -58,7 +59,7 @@ export function App() {
       <Nav />
       <main>
         {!ready ? (
-          <div className="view"><p className="status"><i className="spin" aria-hidden /> Loading your songs…</p></div>
+          <div className="view"><p className="row muted"><i className="spin" aria-hidden /> Loading your songs…</p></div>
         ) : (
           <>
             <PracticeView hidden={view !== "practice"} />
@@ -68,7 +69,8 @@ export function App() {
           </>
         )}
       </main>
-      <MiniPlayer />
+      <TransportDock />
+      <Toast />
       <input
         id={FILE_INPUT_ID}
         className="hidden-file"

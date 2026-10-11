@@ -25,6 +25,8 @@ export interface PlayerState {
   trainer: boolean;
   queueIndex: number | null;
   sectionIdx: number;
+  /** Loop start marked with Set A while the song keeps playing; Set B closes the loop. */
+  markA: number | null;
 }
 
 export interface AppState {
@@ -48,7 +50,7 @@ const initial: AppState = {
   view: "practice",
   openSetId: null,
   status: null,
-  player: { songId: null, playing: false, waiting: false, loop: null, reps: 0, repTarget: 0, pending: null, speed: 100, trainer: false, queueIndex: null, sectionIdx: -1 },
+  player: { songId: null, playing: false, waiting: false, loop: null, reps: 0, repTarget: 0, pending: null, speed: 100, trainer: false, queueIndex: null, sectionIdx: -1, markA: null },
 };
 
 /** Minimal observable store; components subscribe to slices with `useApp`. */
