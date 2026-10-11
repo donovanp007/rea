@@ -38,7 +38,7 @@ const builtIn = songs.map((s, i) => {
   return { id: `builtin-${i + 1}-${name}`, file: `songs/${name}`, name: s.name };
 });
 
-const body = `<title>Practice Looper</title>
+const body = `<title>WorshipFlow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${fonts}">

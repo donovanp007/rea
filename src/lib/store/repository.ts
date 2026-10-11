@@ -1,4 +1,5 @@
 import type { Prefs, QueueItem, SetList, Song } from "./types.ts";
+import type { TeamState } from "../team/types.ts";
 
 /**
  * Where the app keeps its data. Today: IndexedDB on this device.
@@ -16,6 +17,8 @@ export interface Repository {
   saveQueue(queue: QueueItem[]): Promise<void>;
   loadPrefs(): Promise<Partial<Prefs> | null>;
   savePrefs(prefs: Prefs): Promise<void>;
+  loadTeam(): Promise<TeamState | null>;
+  saveTeam(team: TeamState): Promise<void>;
 }
 
 const DB_NAME = "practice-looper-app";
@@ -72,4 +75,6 @@ export class LocalRepository implements Repository {
   async saveQueue(queue: QueueItem[]) { await this.run("meta", "readwrite", (s) => s.put(queue, "queue")); }
   async loadPrefs() { return this.run<Partial<Prefs>>("meta", "readonly", (s) => s.get("prefs") as IDBRequest<Partial<Prefs>>); }
   async savePrefs(prefs: Prefs) { await this.run("meta", "readwrite", (s) => s.put(prefs, "prefs")); }
+  async loadTeam() { return this.run<TeamState>("meta", "readonly", (s) => s.get("team") as IDBRequest<TeamState>); }
+  async saveTeam(team: TeamState) { await this.run("meta", "readwrite", (s) => s.put(team, "team")); }
 }

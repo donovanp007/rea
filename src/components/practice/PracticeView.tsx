@@ -1,4 +1,5 @@
 "use client";
+import { setView } from "@/lib/actions";
 import { describeLength } from "@/lib/music/grid";
 import { useApp } from "@/lib/store/appStore";
 import { AddSongsButton } from "../shell/AddSongsButton";
@@ -33,7 +34,10 @@ export function PracticeView({ hidden }: { hidden: boolean }) {
             </div>
           )}
         </div>
-        <AddSongsButton />
+        <div className="row">
+          <button type="button" className="btn ghost" onClick={() => setView("queue")}>Queue{queueLen ? ` · ${queueLen}` : ""}</button>
+          <AddSongsButton />
+        </div>
       </div>
       <Arranger active={active} />
       {song && (

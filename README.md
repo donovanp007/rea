@@ -1,4 +1,21 @@
-# Practice Looper
+# WorshipFlow
+
+Worship team planning without the chaos: availability, rosters, Sunday plans and practice in one
+place. Every musician gets a simple personal view; section leaders and the worship leader get the
+planning tools.
+
+| Area | What it does |
+|---|---|
+| **Home** | Your next service with one-tap Confirm / Can't make it, your availability as tap-to-change date chips, and updates for things that changed. Leaders see open positions and pending replies. |
+| **Calendar** | Mark dates available, maybe or away with a tap (or every Sunday at once). Leaders get a roster matrix: people × Sundays, coloured by availability; tap a cell to put someone on, with warnings for unavailable, unanswered or double-booked people. |
+| **Services** | Each Sunday's plan: setlist with keys (changing a key notifies everyone on the service), team by section with suggested people, rehearsal time, publish, remind only the people who haven't replied, and an activity log. |
+| **Practice** | The practice looper below, opened straight from a setlist song. |
+
+Team data is a sample team stored on this device until accounts and sync are added (see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). Use **Viewing as** to see the app as a musician,
+section leader or worship leader.
+
+## Practice Looper
 
 A practice app for bands and worship teams. Add a song and it splits into **Intro, Verse,
 Chorus, Bridge…** automatically, so you can loop the part you're learning, slow it down

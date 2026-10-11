@@ -4,7 +4,9 @@ import { addFiles, init, player } from "@/lib/actions";
 import { useApp } from "@/lib/store/appStore";
 import { PracticeView } from "./practice/PracticeView";
 import { QueueView } from "./queue/QueueView";
-import { SetsView } from "./sets/SetsView";
+import { CalendarView } from "./calendar/CalendarView";
+import { HomeView } from "./home/HomeView";
+import { ServicesView } from "./services/ServicesView";
 import { Nav } from "./shell/Nav";
 import { Toast } from "./shell/Toast";
 import { TransportDock } from "./shell/TransportDock";
@@ -63,7 +65,9 @@ export function App() {
         ) : (
           <>
             <PracticeView hidden={view !== "practice"} />
-            {view === "sets" && <SetsView />}
+            {view === "home" && <HomeView />}
+            {view === "calendar" && <CalendarView />}
+            {view === "services" && <ServicesView />}
             {view === "songs" && <SongsView />}
             {view === "queue" && <QueueView />}
           </>

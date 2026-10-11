@@ -77,4 +77,4 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = { gap: "p2", launch: "now", trainerStart: 70, trainerStep: 5, trainerTarget: 100, snap: "beat" };
 
-export type View = "practice" | "sets" | "songs" | "queue";
+export type View = "home" | "calendar" | "services" | "practice" | "songs" | "queue";

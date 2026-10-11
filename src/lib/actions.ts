@@ -9,6 +9,7 @@ import { store } from "./store/appStore.ts";
 import { LocalRepository, type Repository } from "./store/repository.ts";
 import { DEFAULT_PREFS, type Prefs, type QueueItem, type SavedLoop, type SetItem, type SetList, type Song, type View } from "./store/types.ts";
 import { snapTime } from "./music/grid.ts";
+import { initTeam } from "./team/actions.ts";
 
 const DAY = 86_400_000;
 let repo: Repository;
@@ -35,10 +36,11 @@ export async function init() {
   // handle for automated browser tests and debugging from the console
   Object.assign(window, { __practiceLooper: { store, engine } });
   const [songs, sets, queue, prefs] = await Promise.all([repo.loadSongs(), repo.loadSets(), repo.loadQueue(), repo.loadPrefs()]);
-  let view: View = "practice";
-  try { view = (localStorage.getItem("pl-view") as View) || "practice"; } catch { /* storage unavailable */ }
-  store.set({ songs, sets, queue, prefs: { ...DEFAULT_PREFS, ...(prefs ?? {}) }, view: ["practice", "sets", "songs", "queue"].includes(view) ? view : "practice", ready: true });
+  let view: View = "home";
+  try { view = (localStorage.getItem("pl-view") as View) || "home"; } catch { /* storage unavailable */ }
+  store.set({ songs, sets, queue, prefs: { ...DEFAULT_PREFS, ...(prefs ?? {}) }, view: VIEWS.includes(view) ? view : "home", ready: true });
   const builtIn = builtInSongs();
+  await initTeam(repo, songs[0]?.id ?? builtIn[0]?.id);
   if (!songs.length) {
     if (builtIn.length) {
       saveSets([{ id: uid(), name: "Sunday service", date: nextSunday(), createdAt: Date.now(), items: [] }]);
@@ -57,6 +59,8 @@ export async function init() {
   } else if (songs[0]) await engine.load(songs[0].id);
   await loadBuiltInSongs(builtIn);
 }
+
+const VIEWS: View[] = ["home", "calendar", "services", "practice", "songs", "queue"];
 
 /** Songs bundled with a build of the page (see scripts/build-standalone.mjs). */
 interface BuiltInSong { id: string; file: string; name: string }

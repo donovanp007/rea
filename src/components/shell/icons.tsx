@@ -1,6 +1,8 @@
 type P = { size?: number };
 const base = (size: number) => ({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true });
 
+export const IconHome = ({ size = 20 }: P) => <svg {...base(size)}><path d="M4 10.5L12 4l8 6.5V20h-5.5v-5.5h-5V20H4z" /></svg>;
+export const IconCalendar = ({ size = 20 }: P) => <svg {...base(size)}><rect x="3.5" y="5" width="17" height="15.5" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17" /><circle cx="8.5" cy="14.5" r="1" fill="currentColor" /><circle cx="12" cy="14.5" r="1" fill="currentColor" /></svg>;
 export const IconPractice = ({ size = 20 }: P) => <svg {...base(size)}><path d="M3 12h1.5M7 8v8M11 4.5v15M15 8.5v7M19 10.5v3M21 12h0" /></svg>;
 export const IconSets = ({ size = 20 }: P) => <svg {...base(size)}><rect x="4" y="4.5" width="16" height="16" rx="3" /><path d="M8 2.5v4M16 2.5v4M8 11h8M8 15h5" /></svg>;
 export const IconSongs = ({ size = 20 }: P) => <svg {...base(size)}><circle cx="7" cy="17.5" r="2.5" /><circle cx="18" cy="15.5" r="2.5" /><path d="M9.5 17.5V5.5l11-2v12" /></svg>;

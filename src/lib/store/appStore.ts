@@ -1,6 +1,7 @@
 "use client";
 import { useSyncExternalStore } from "react";
 import { DEFAULT_PREFS, type Prefs, type QueueItem, type SetList, type Song, type View } from "./types.ts";
+import type { TeamState } from "../team/types.ts";
 
 export interface Loop {
   start: number;
@@ -39,6 +40,8 @@ export interface AppState {
   openSetId: string | null;
   status: { text: string; busy: boolean } | null;
   player: PlayerState;
+  team: TeamState | null;
+  openServiceId: string | null;
 }
 
 const initial: AppState = {
@@ -47,8 +50,10 @@ const initial: AppState = {
   sets: [],
   queue: [],
   prefs: DEFAULT_PREFS,
-  view: "practice",
+  view: "home",
   openSetId: null,
+  openServiceId: null,
+  team: null,
   status: null,
   player: { songId: null, playing: false, waiting: false, loop: null, reps: 0, repTarget: 0, pending: null, speed: 100, trainer: false, queueIndex: null, sectionIdx: -1, markA: null },
 };
