@@ -37,8 +37,15 @@ export interface Assignment {
   status: AssignmentStatus;
 }
 
+/** What a line in the order of service is: a song, any other item (prayer, message…), or a section header. */
+export type ItemKind = "song" | "item" | "header";
+
 export interface SetSong {
   id: string;
+  /** Missing means a song, so plans saved before items existed keep working. */
+  kind?: ItemKind;
+  /** For non-song items: the type id from ITEM_TYPES (e.g. "prayer"). */
+  itemType?: string;
   title: string;
   key: string;
   minutes: number;
@@ -77,6 +84,14 @@ export interface Update {
   readBy: string[];
 }
 
+/** A reusable plan: its order of service and the people who usually fill each position. */
+export interface PlanTemplate {
+  id: string;
+  name: string;
+  items: SetSong[];
+  positions: { teamId: string; position: string; memberId: string }[];
+}
+
 export interface TeamState {
   church: string;
   me: string;
@@ -86,4 +101,5 @@ export interface TeamState {
   /** key: `${memberId}|${YYYY-MM-DD}` */
   availability: Record<string, Avail>;
   updates: Update[];
+  templates?: PlanTemplate[];
 }

@@ -57,6 +57,28 @@ export function classifyStem(fileName: string): StemGroup {
   return "other";
 }
 
+/**
+ * Names and groups for the files of ONE song. The song title is usually part of every file name
+ * ("ALLELUIA_drums (RP).mp3"), and a title like "Bass Drum Blues" would fool the matcher, so what
+ * the files share at the start is removed first, along with tags like "(RP)".
+ */
+export function classifyBatch(fileNames: string[]): { name: string; group: StemGroup }[] {
+  const base = fileNames.map((f) => stemName(f).replace(/\((rp|stem|stems|mp3|wav)\)/gi, "").replace(/\s+/g, " ").trim());
+  let prefix = "";
+  if (base.length > 1) {
+    prefix = base[0]!;
+    for (const b of base) while (prefix && !b.toLowerCase().startsWith(prefix.toLowerCase())) prefix = prefix.slice(0, -1);
+    // only cut at a word edge, and never the whole name
+    const cut = prefix.search(/[\s_\-.]+[^\s_\-.]*$/);
+    prefix = base.every((b) => b.length > prefix.length) && /[\s_\-.]$/.test(prefix) ? prefix : cut > 2 && base.every((b) => b.length > cut + 1) && prefix.length < Math.min(...base.map((b) => b.length)) ? prefix.slice(0, cut + 1) : "";
+  }
+  return fileNames.map((f, i) => {
+    const rest = prefix ? base[i]!.slice(prefix.length).replace(/^[\s_\-.]+/, "") : base[i]!;
+    const label = rest || base[i]!;
+    return { name: label, group: classifyStem(label) };
+  });
+}
+
 /** A tidy display name: no extension, no leading track number. */
 export function stemName(fileName: string): string {
   return fileName.replace(/^.*[\\/]/, "").replace(/\.[a-z0-9]{2,4}$/i, "").replace(/^\d{1,3}[\s._-]+/, "").replace(/_/g, " ").trim() || fileName;

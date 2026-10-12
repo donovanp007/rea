@@ -6,7 +6,7 @@ import type { Repository } from "../store/repository.ts";
 import type { Song } from "../store/types.ts";
 import type { PlayerEngine } from "../player/engine.ts";
 import { addSetSong } from "../team/actions.ts";
-import { classifyStem, DEFAULT_STRIP, isCue, stemName, type Stem, type StemGroup, type Strip } from "../tracks/stems.ts";
+import { classifyBatch, classifyStem, DEFAULT_STRIP, isCue, type Stem, type StemGroup, type Strip } from "../tracks/stems.ts";
 import { LiveEngine } from "./liveEngine.ts";
 
 let live: LiveEngine;
@@ -83,8 +83,9 @@ const AUDIO = (f: File) => f.type.startsWith("audio/") || /\.(mp3|m4a|wav|aac|og
 /** Stores stem files and returns their stem records. */
 async function saveStems(files: File[]): Promise<Stem[]> {
   const stems: Stem[] = [];
-  for (const f of files) {
-    const stem: Stem = { id: deps.uid(), name: stemName(f.name), group: classifyStem(f.name) };
+  const labels = classifyBatch(files.map((f) => f.name));
+  for (const [i, f] of files.entries()) {
+    const stem: Stem = { id: deps.uid(), name: labels[i]!.name, group: labels[i]!.group };
     await repo.saveAudio(`stem:${stem.id}`, f);
     stems.push(stem);
   }
@@ -111,7 +112,8 @@ export async function newMultitrackSong(files: File[]) {
   const name = songNameFrom(audio);
   status(`Mixing ${audio.length} stems of “${name}” to find its sections…`, true);
   try {
-    const mix = await mixdownStems(audio.map((f) => ({ blob: f, cue: isCue(classifyStem(f.name)) })));
+    const groups = classifyBatch(audio.map((f) => f.name));
+    const mix = await mixdownStems(audio.map((f, i) => ({ blob: f, cue: isCue(groups[i]!.group) })));
     const song = await deps.addSong(mix, name);
     if (!song) return;
     const stems = await saveStems(audio);

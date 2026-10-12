@@ -3,7 +3,9 @@ import { store } from "../store/appStore.ts";
 import type { Repository } from "../store/repository.ts";
 import { demoTeam, fmtDate } from "./demo.ts";
 import { activeAssignments, assignmentWarnings, availabilityOf, availKey, leadersFor, memberById, servingIds, teamById } from "./logic.ts";
-import type { Assignment, Avail, Service, SetSong, TeamState, Update, UpdateKind } from "./types.ts";
+import { applyOrder, ITEM_TYPES, itemType, moveTo, templateFromService } from "./plan.ts";
+import type { Proposal } from "./schedule.ts";
+import type { Assignment, Avail, ItemKind, Service, SetSong, TeamState, Update, UpdateKind } from "./types.ts";
 
 /**
  * Team planning: availability, rosters, confirmations, service plans and the updates they send.
@@ -144,9 +146,67 @@ export function addSetSong(serviceId: string, song: Omit<SetSong, "id">) {
   commit(t);
 }
 /** Edits a setlist song's details that don't need anyone told (tempo, time signature, note). */
-export function updateSetSong(serviceId: string, id: string, patch: Partial<Pick<SetSong, "bpm" | "meter" | "note">>) {
+export function updateSetSong(serviceId: string, id: string, patch: Partial<Pick<SetSong, "bpm" | "meter" | "note" | "title" | "minutes">>) {
   commit(editService(T(), serviceId, (s) => ({ ...s, setlist: s.setlist.map((x) => (x.id === id ? { ...x, ...patch } : x)) })));
 }
+
+/** Adds a prayer, message, header… to the order of service. Nobody is told: only songs matter to the team. */
+export function addPlanItem(serviceId: string, kind: Exclude<ItemKind, "song">, title: string, type?: string, minutes?: number) {
+  const def = itemType(type);
+  const item: SetSong = kind === "header"
+    ? { id: uid(), kind, title: title.trim() || "Section", key: "", minutes: 0 }
+    : { id: uid(), kind, itemType: def.id, title: title.trim() || def.label, key: "", minutes: minutes ?? def.minutes };
+  commit(editService(T(), serviceId, (s) => ({ ...s, setlist: [...s.setlist, item] })));
+}
+
+/**
+ * Saves a whole new order at once (what a drag and drop sends), so a list can never lose an item.
+ * `moveItem` is the drag helper: it turns "put this at position n" into the full sequence.
+ */
+export function reorderSetlist(serviceId: string, sequence: string[]) {
+  commit(editService(T(), serviceId, (s) => ({ ...s, setlist: applyOrder(s.setlist, sequence) })));
+}
+export function moveItem(serviceId: string, id: string, to: number) {
+  const svc = svcOf(serviceId);
+  if (svc) reorderSetlist(serviceId, moveTo(svc.setlist, id, to));
+}
+
+/* ---------- templates ---------- */
+
+export function saveTemplate(serviceId: string, name: string) {
+  const svc = svcOf(serviceId);
+  const n = name.trim();
+  if (!svc || !n) return;
+  const t = T();
+  const tpl = templateFromService(svc, n, uid());
+  commit({ ...t, templates: [...(t.templates ?? []).filter((x) => x.name.toLowerCase() !== n.toLowerCase()), tpl] });
+  say(`Saved “${n}” as a template: ${tpl.items.length} items and ${tpl.positions.length} usual people.`);
+}
+export function deleteTemplate(id: string) {
+  const t = T();
+  commit({ ...t, templates: (t.templates ?? []).filter((x) => x.id !== id) });
+}
+/** Replaces this service's order with a template's. The people come in through Auto-fill, which reads templates too. */
+export function applyTemplate(serviceId: string, templateId: string) {
+  const tpl = (T().templates ?? []).find((x) => x.id === templateId);
+  if (!tpl) return;
+  commit(editService(T(), serviceId, (s) => ({ ...s, setlist: tpl.items.map((i) => ({ ...i, id: uid() })) })));
+  say(`Started from “${tpl.name}”: ${tpl.items.length} items.`);
+}
+
+/** Puts the proposed people on a team's open positions in one step, asking them to confirm if the plan is published. */
+export function fillTeam(serviceId: string, teamId: string, picks: Proposal[]) {
+  const svc = svcOf(serviceId);
+  if (!svc || !picks.length) return;
+  let t = T();
+  const status: Assignment["status"] = svc.status === "published" ? "requested" : "proposed";
+  const added: Assignment[] = picks.map((p) => ({ id: uid(), memberId: p.memberId, teamId, position: p.position, status }));
+  t = editService(t, serviceId, (s) => ({ ...s, assignments: [...s.assignments.filter((a) => !added.some((n) => n.teamId === a.teamId && n.position === a.position && a.status === "declined")), ...added] }));
+  if (status === "requested") for (const a of added) t = notify(t, "assigned", "You're scheduled", `${a.position} · ${fmtDate(svc.date)} · please confirm`, [a.memberId], serviceId);
+  commit(t);
+  say(`${added.length} ${added.length === 1 ? "person" : "people"} added${status === "requested" ? " and asked to confirm" : " to the draft"}.`);
+}
+
 export function removeSetSong(serviceId: string, songId: string) {
   const svc = svcOf(serviceId);
   const song = svc?.setlist.find((s) => s.id === songId);
@@ -155,6 +215,8 @@ export function removeSetSong(serviceId: string, songId: string) {
   if (svc.status === "published") t = notify(t, "setlist", "Song removed", `${song.title} · ${fmtDate(svc.date)}`, servingIds(svc), serviceId);
   commit(t);
 }
+/** Item types for pickers. */
+export const itemTypes = ITEM_TYPES;
 export function moveSetSong(serviceId: string, i: number, d: number) {
   commit(editService(T(), serviceId, (s) => {
     const list = s.setlist.slice(), j = i + d;

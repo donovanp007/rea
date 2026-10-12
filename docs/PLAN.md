@@ -50,13 +50,14 @@ app shared between real people; it needs the decisions listed under "Decisions n
 | Publish and remind pending | Built | Only people who haven't replied |
 | Rehearsal time | Built | |
 | Copy last week's setlist | Built | |
-| Service order with non-song items (welcome, prayer, scripture, message, communion, offering) | Next (M2) | |
-| Durations per item and total service time | Next (M2) | Running clock down the order |
-| Transitions and notes per item | Next (M2) | |
-| Song detail panel (key, BPM, arrangement, notes) | Next (M2) | |
+| Service order with non-song items (welcome, prayer, scripture, message, communion, offering) | Built | Nine item types with colours, section headers, drag to reorder |
+| Durations per item and total service time | Built | Running clock from the service start time |
+| Transitions and notes per item | Partial | Note per song; transitions next |
+| Song detail panel (tempo, time signature, note) | Built | Opens in Practice or Live |
 | "Changes since last publish" | Later (M5) | |
 | Version history | Later (M5) | |
-| Service templates | Later (M5) | |
+| Service templates with "Fill in" placeholders | Built | Save and start from a template |
+| Auto-fill a team: same as before, or fair rotation | Built | Preview with reasons, then apply |
 
 ### 3. Music & Rehearsal
 
@@ -236,6 +237,46 @@ second.
 2. **Delivery.** Web push to the installed app, email digests, and WhatsApp messages for
    critical alerts (WhatsApp Business API, paid per message).
 3. **Chord charts.** Attach PDFs or paste ChordPro; transpose with the key.
+
+## Planning Center reference: how it maps to us
+
+From the source breakdown and master document (concepts only; we write our own code and use no
+Planning Center code, assets or names). The point of the breakdown: Planning Center is strong at
+scheduling and weak at rehearsal, so we match its planning and win on the Rehearsal Player.
+
+| Planning Center concept | Our version | Status |
+|---|---|---|
+| Plan items: header / item / song, each with a length; total length summed | Order tab: songs, items and headers, minutes per line, running clock from the service start | Built |
+| Reorder saves the whole sequence in one call | Drag and drop and ↑↓ both save the full order, so nothing is lost or duplicated | Built |
+| Item types with colours (Welcome, Prayer, Message, Offering…) | Nine item types with colours | Built |
+| Templates as a first-class plan type, with placeholders ("#Pastor name here#", "TBC") | Save an order and its usual people as a template; start any Sunday from one; placeholders flagged "Fill in" | Built |
+| Auto-assign: copy people from previous plans and templates in the last 6 months, preview first | "Same as before" on each team, with the reason shown for every pick | Built |
+| Autoschedule: rotation, availability, conflicts, last-scheduled recency | "Fair rotation": available beats maybe beats no answer, then least recent; one person per position | Built |
+| Schedule drawer: last-scheduled badge and conflict badges | Picker shows availability and when each person last played that position | Partial |
+| Status C / U / D, un-schedule rules | Accepted / requested / declined, plus a draft state before publishing | Built |
+| Needed positions per plan (count per position) | Positions per team; counts per plan next | Next |
+| Rotations ("every 3 weeks") and scheduling preferences (max per month, AM only) | Per-member preferences feeding the fair-rotation engine | Next |
+| Blockout dates, with decline → find a replacement | Away dates built; replacement flow in M5 | Partial |
+| Service types (AM Service, PM Service, Good Friday…), each with its own teams and templates | One service type today | Next |
+| Plan times: service, rehearsal, other; split teams (scheduled to some times only) | One service time and one rehearsal | Later |
+| Songs → arrangements → keys; sequence of sections picks what charts show | Songs with sections and arrangement order; keys per setlist song | Partial |
+| Chord charts from text, per key; number and numeral charts; transpose | Chart text per song, rendered in any key, as chords, numbers or numerals | Next |
+| Tags: speed, style, theme, vocal range; filter the library | Tag groups and library filters | Next |
+| Attachments with permissions (stream only / download / edit); "for me" targeting | Stems stream-only inside the app; attachments per instrument shown to the right people | Partial |
+| Matrix: many plans at once, drag a person from one plan to another | Roster matrix built; drag-to-copy next | Partial |
+| Live: one controller, current and next item, clock, item countdown | Live mode for stems built; service run-of-show with item timers and a controller next | Partial |
+| Real-time events; reminders three days out; texts and emails | Updates built; timed reminders and delivery need accounts (M6, M7) | Later |
+| Households: a parent answers for a child | "Respond for…" | Later |
+| Burnout view: who is over- or under-scheduled across teams | Dashboard | Next |
+| The gaps: charts never seek audio, no stem mute, no tempo change, no offline, no practice room, no plan chat | Our Rehearsal Player, Live mode, Practice, and Chat | Built / in progress |
+
+Your own data adds three things worth building on:
+- Your team positions include **ABLETON**, so the person running tracks is a first-class role, and
+  the Ableton export is made for them.
+- Your rehearsal stems are named like `ALLELUIA_drums (RP).mp3`. Stem import now ignores the song
+  title and tags like "(RP)", so a song called "Bass Drum Blues" can't confuse the groups.
+- Your weekly plan is a fixed template of about 27 rows with one song section that changes. Templates
+  with placeholders are built for exactly that.
 
 ## Daily workflows: the quality bar
 

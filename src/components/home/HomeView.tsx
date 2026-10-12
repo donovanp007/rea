@@ -3,6 +3,7 @@ import { openSong, setView } from "@/lib/actions";
 import { store } from "@/lib/store/appStore";
 import { markAllRead, respond, setAvailability } from "@/lib/team/actions";
 import { fmtDate } from "@/lib/team/demo";
+import { songsOf } from "@/lib/team/plan";
 import { activeAssignments, availabilityOf, coverage, unreadFor } from "@/lib/team/logic";
 import type { Avail, Update } from "@/lib/team/types";
 import { useTeam } from "@/lib/team/useTeam";
@@ -64,7 +65,7 @@ export function HomeView() {
                 <div className="row">
                   <button type="button" className="btn sm" onClick={() => openService(next.svc.id)}>Open service plan</button>
                   {firstSong?.songId && <button type="button" className="btn sm" onClick={() => void openSong(firstSong.songId!)}>Practise the set</button>}
-                  <span className="note">{next.svc.setlist.length} songs · {next.svc.setlist.map((x) => `${x.title.replace("Sample song: ", "")} (${x.key})`).join(" · ")}</span>
+                  <span className="note">{songsOf(next.svc).length} songs · {songsOf(next.svc).map((x) => `${x.title.replace("Sample song: ", "")} (${x.key})`).join(" · ")}</span>
                 </div>
               </div>
             </section>

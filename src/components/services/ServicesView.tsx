@@ -1,17 +1,20 @@
 "use client";
 import { useState } from "react";
-import { addToQueue, openSong, setView } from "@/lib/actions";
+import { openSong, setView } from "@/lib/actions";
 import { openLive } from "@/lib/live/actions";
 import { store, useApp } from "@/lib/store/appStore";
-import { addSetSong, changeKey, copySetlist, keyOptions, moveSetSong, publish, remindPending, removeSetSong, respond, setRehearsal, toggleAssign } from "@/lib/team/actions";
+import { publish, remindPending, respond, setRehearsal, toggleAssign } from "@/lib/team/actions";
 import { fmtDate } from "@/lib/team/demo";
 import { activeAssignments, candidates, coverage, isLeaderOf, memberById } from "@/lib/team/logic";
 import type { Service, TeamState } from "@/lib/team/types";
 import { useTeam } from "@/lib/team/useTeam";
 import { AVAIL_LABEL, Avatar, STATUS_LABEL } from "../shell/Avatar";
-import { IconPlay, IconTrash } from "../shell/icons";
 import { UpdateRow } from "../home/HomeView";
 import { AbletonExport } from "./AbletonExport";
+import { AutoFill } from "./AutoFill";
+import { PlanOrder } from "./PlanOrder";
+import { songsOf, timeline } from "@/lib/team/plan";
+import { lastScheduled } from "@/lib/team/schedule";
 
 export function ServicesView() {
   const { team } = useTeam();
@@ -41,7 +44,7 @@ function ServiceList({ team }: { team: TeamState }) {
               <div><b className="t">{s.title}</b><span className="note">{fmtDate(s.date, { weekday: "long" })} · {s.time} · rehearsal {fmtDate(s.rehearsal.date, { weekday: "short" })} {s.rehearsal.time}</span></div>
               <div className="strip" aria-hidden>{cov.map((c) => <i key={c.team.id} style={{ flex: c.needed, "--c": c.open.length ? "var(--line-2)" : `var(${c.team.color})` } as React.CSSProperties} />)}</div>
               <div className="row between note">
-                <span>{filled}/{needed} positions · {s.setlist.length} songs</span>
+                <span>{filled}/{needed} positions · {songsOf(s).length} songs</span>
                 {gaps.length ? <span className="warn">Needs {gaps.map((g) => g.open.join(", ")).join(", ")}</span> : <span className="okc">Team complete</span>}
               </div>
             </button>
@@ -60,7 +63,7 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
   const [tab, setTab] = useState<Tab>("setlist");
   const lead = me.worshipLeader;
   const myPending = svc.assignments.find((a) => a.memberId === me.id && a.status === "requested");
-  const minutes = svc.setlist.reduce((a, s) => a + s.minutes, 0);
+  const tl = timeline(svc);
   const cov = coverage(svc, team.teams);
   const awaiting = svc.assignments.filter((a) => a.status === "requested").length;
   const proposed = svc.assignments.filter((a) => a.status === "proposed").length;
@@ -94,7 +97,7 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
       )}
 
       <div className="stats4">
-        <div className="panel stat"><span className="label">Setlist</span><b>{svc.setlist.length} songs</b><span className="note">{minutes} min of music</span></div>
+        <div className="panel stat"><span className="label">Order of service</span><b>{songsOf(svc).length} songs</b><span className="note">{tl.total} min service · {tl.music} min of music</span></div>
         <div className="panel stat"><span className="label">Team</span><b>{cov.reduce((a, c) => a + c.filled, 0)}/{cov.reduce((a, c) => a + c.needed, 0)}</b><span className="note">{cov.reduce((a, c) => a + c.confirmed, 0)} confirmed</span></div>
         <div className="panel stat"><span className="label">Awaiting replies</span><b>{awaiting}</b><span className="note">{proposed ? `${proposed} not sent yet` : "requests sent"}</span></div>
         <div className="panel stat"><span className="label">Rehearsal</span><b>{svc.rehearsal.time}</b><span className="note">{fmtDate(svc.rehearsal.date, { weekday: "long" })}</span></div>
@@ -103,47 +106,12 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
       <div className="seg" role="tablist" aria-label="Service plan" style={{ width: "fit-content", maxWidth: "100%" }}>
         {(["setlist", "team", "rehearsal", "ableton", "activity"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} aria-pressed={tab === t} onClick={() => setTab(t)}>
-            {t === "setlist" ? "Setlist" : t === "team" ? "Team" : t === "rehearsal" ? "Rehearsal" : t === "ableton" ? "Ableton" : `Activity${updates.length ? ` · ${updates.length}` : ""}`}
+            {t === "setlist" ? "Order" : t === "team" ? "Team" : t === "rehearsal" ? "Rehearsal" : t === "ableton" ? "Ableton" : `Activity${updates.length ? ` · ${updates.length}` : ""}`}
           </button>
         ))}
       </div>
 
-      {tab === "setlist" && (
-        <section className="panel">
-          <div className="panel-b">
-            {!svc.setlist.length && <p className="empty">No songs yet.{lead ? " Add songs below, or copy an earlier Sunday's set." : ""}</p>}
-            <ol className="setlist">
-              {svc.setlist.map((s, i) => (
-                <li key={s.id}>
-                  <span className="num mono">{String(i + 1).padStart(2, "0")}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <b>{s.title}</b>
-                    <span className="note">{s.minutes} min{s.songId ? " · practice track" : ""}</span>
-                  </div>
-                  {lead ? (
-                    <select className="key-select" value={s.key} aria-label={`Key of ${s.title}`} onChange={(e) => changeKey(svc.id, s.id, e.target.value)}>
-                      {keyOptions.map((k) => <option key={k} value={k}>{k}</option>)}
-                    </select>
-                  ) : <span className="key-badge">{s.key}</span>}
-                  <div className="acts">
-                    {s.songId && songs.some((x) => x.id === s.songId) && <button type="button" className="btn sm" onClick={() => void openSong(s.songId!)}><IconPlay size={13} /> Practise</button>}
-                    {lead && <>
-                      <button type="button" className="btn sm icon ghost" aria-label="Move up" disabled={i === 0} onClick={() => moveSetSong(svc.id, i, -1)}>↑</button>
-                      <button type="button" className="btn sm icon ghost" aria-label="Move down" disabled={i === svc.setlist.length - 1} onClick={() => moveSetSong(svc.id, i, 1)}>↓</button>
-                      <button type="button" className="btn sm icon ghost" aria-label={`Remove ${s.title}`} onClick={() => removeSetSong(svc.id, s.id)}><IconTrash /></button>
-                    </>}
-                  </div>
-                </li>
-              ))}
-            </ol>
-            {lead && <AddSong svc={svc} earlier={earlier} />}
-            {svc.setlist.some((s) => s.songId) && (
-              <div className="row"><button type="button" className="btn sm ghost" onClick={() => { svc.setlist.forEach((s) => { if (s.songId && songs.some((x) => x.id === s.songId)) addToQueue(s.songId, null, 1); }); setView("queue"); }}>Add the practice tracks to my queue</button></div>
-            )}
-            {lead && svc.status === "published" && <p className="note">Changing a key notifies everyone on this service.</p>}
-          </div>
-        </section>
-      )}
+      {tab === "setlist" && <PlanOrder svc={svc} lead={lead} earlier={earlier} />}
 
       {tab === "team" && (
         <div className="team-grid">
@@ -156,6 +124,7 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
                   <span className={`chip ${c.open.length ? "cycle" : "new"}`}>{c.open.length ? `${c.open.length} open` : "Covered"}</span>
                 </div>
                 <div className="panel-b">
+                  {canEdit && c.open.length > 0 && <AutoFill svc={svc} team={team} teamId={c.team.id} />}
                   {c.team.positions.map((pos) => {
                     const a = svc.assignments.find((x) => x.teamId === c.team.id && x.position === pos && x.status !== "declined");
                     const m = a && memberById(team, a.memberId);
@@ -187,7 +156,7 @@ function ServicePlan({ team, svc }: { team: TeamState; svc: Service }) {
             ) : <p style={{ margin: 0 }}><b>{fmtDate(svc.rehearsal.date, { weekday: "long", day: "numeric", month: "long" })} at {svc.rehearsal.time}</b></p>}
             <span className="label">Prepare</span>
             <ul className="list">
-              {svc.setlist.map((s) => (
+              {songsOf(svc).map((s) => (
                 <li key={s.id} className="mini-row">
                   <span className="key-badge">{s.key}</span>
                   <div><b>{s.title}</b></div>
@@ -223,36 +192,15 @@ function Pick({ svc, team, teamId, position, current }: { svc: Service; team: Te
       <option value="">{current ? "Remove" : "Choose…"}</option>
       {list.map((c) => (
         <option key={c.member.id} value={c.member.id}>
-          {c.member.name} · {c.avail ? AVAIL_LABEL[c.avail] : "no answer"}{c.recent ? ` · served ${c.recent}× lately` : ""}{activeAssignments(svc).some((a) => a.memberId === c.member.id && a.position !== position) ? " · already on" : ""}
+          {c.member.name} · {c.avail ? AVAIL_LABEL[c.avail] : "no answer"}{lastLabel(team, svc, c.member.id, teamId, position)}{activeAssignments(svc).some((a) => a.memberId === c.member.id && a.position !== position) ? " · already on" : ""}
         </option>
       ))}
     </select>
   );
 }
 
-function AddSong({ svc, earlier }: { svc: Service; earlier: Service[] }) {
-  const songs = useApp((s) => s.songs);
-  const [title, setTitle] = useState("");
-  const [key, setKey] = useState("G");
-  const add = () => {
-    const t = title.trim();
-    if (!t) return;
-    const lib = songs.find((s) => s.name.toLowerCase() === t.toLowerCase());
-    addSetSong(svc.id, { title: lib?.name ?? t, key, minutes: lib ? Math.max(1, Math.round(lib.duration / 60)) : 5, songId: lib?.id });
-    setTitle("");
-  };
-  return (
-    <div className="add-song">
-      <input type="text" list="lib-songs" placeholder="Add a song: type a title or pick from your library" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} className="grow" aria-label="Song title" />
-      <datalist id="lib-songs">{songs.map((s) => <option key={s.id} value={s.name} />)}</datalist>
-      <select value={key} onChange={(e) => setKey(e.target.value)} aria-label="Key">{keyOptions.map((k) => <option key={k} value={k}>{k}</option>)}</select>
-      <button type="button" className="btn" onClick={add} disabled={!title.trim()}>Add</button>
-      {earlier.length > 0 && (
-        <select value="" onChange={(e) => e.target.value && copySetlist(e.target.value, svc.id)} aria-label="Copy a setlist">
-          <option value="">Copy a set from…</option>
-          {earlier.map((s) => <option key={s.id} value={s.id}>{fmtDate(s.date)} · {s.setlist.length} songs</option>)}
-        </select>
-      )}
-    </div>
-  );
+/** " · played 13 Sep" for the position, or "never" when they haven't. */
+function lastLabel(team: TeamState, svc: Service, memberId: string, teamId: string, position: string): string {
+  const last = lastScheduled(team, memberId, svc.date, { teamId, position });
+  return last ? ` · played ${fmtDate(last.date, { day: "numeric", month: "short" })}` : " · not yet";
 }

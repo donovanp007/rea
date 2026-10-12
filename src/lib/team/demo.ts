@@ -60,9 +60,15 @@ export function demoTeam(now = new Date(), practiceSongId?: string): TeamState {
     { id: "ss3", title: "Sample song: Worship", key: keys[2]!, minutes: 6 },
     { id: "ss4", title: "Sample song: Response", key: keys[3]!, minutes: 5 },
   ];
+  const orderOf = (keys: string[]): Service["setlist"] => {
+    const [first, ...rest] = songs(keys);
+    const h = (id: string, title: string) => ({ id, kind: "header" as const, title, key: "", minutes: 0 });
+    const it = (id: string, type: string, title: string, minutes: number) => ({ id, kind: "item" as const, itemType: type, title, key: "", minutes });
+    return [it("o1", "welcome", "Welcome", 3), h("o2", "Worship"), first!, ...rest, h("o3", "Word"), it("o4", "scripture", "Scripture reading", 3), it("o5", "message", "#Preacher name here#", 30), it("o6", "offering", "Offering", 5), it("o7", "prayer", "Closing prayer", 3)];
+  };
   const services: Service[] = [
-    svc(0, "published", [a("grace", "vocals", "Lead vocal", "accepted"), a("amelia", "vocals", "Vocal 2", "accepted"), a("ruth", "vocals", "Vocal 3", "requested"), a("thabo", "keys", "Keys", "accepted"), a("luke", "guitar", "Electric guitar", "accepted"), a("sipho", "guitar", "Acoustic guitar", "accepted"), a("kagiso", "bass", "Bass", "accepted"), a("donovan", "drums", "Drums", "requested")], songs(["G", "D", "A", "E"])),
-    svc(1, "published", [a("amelia", "vocals", "Lead vocal", "accepted"), a("naledi", "vocals", "Vocal 2", "accepted"), a("ruth", "vocals", "Vocal 3", "accepted"), a("michelle", "keys", "Keys", "accepted"), a("ethan", "guitar", "Electric guitar", "requested"), a("jared", "bass", "Bass", "accepted"), a("daniel", "drums", "Drums", "declined")], songs(["A", "G", "D", "B"])),
+    svc(0, "published", [a("grace", "vocals", "Lead vocal", "accepted"), a("amelia", "vocals", "Vocal 2", "accepted"), a("ruth", "vocals", "Vocal 3", "requested"), a("thabo", "keys", "Keys", "accepted"), a("luke", "guitar", "Electric guitar", "accepted"), a("sipho", "guitar", "Acoustic guitar", "accepted"), a("kagiso", "bass", "Bass", "accepted"), a("donovan", "drums", "Drums", "requested")], orderOf(["G", "D", "A", "E"])),
+    svc(1, "published", [a("amelia", "vocals", "Lead vocal", "accepted"), a("naledi", "vocals", "Vocal 2", "accepted"), a("ruth", "vocals", "Vocal 3", "accepted"), a("michelle", "keys", "Keys", "accepted"), a("ethan", "guitar", "Electric guitar", "requested"), a("jared", "bass", "Bass", "accepted"), a("daniel", "drums", "Drums", "declined")], orderOf(["A", "G", "D", "B"])),
     svc(2, "draft", [a("grace", "vocals", "Lead vocal", "proposed"), a("thabo", "keys", "Keys", "proposed"), a("joshua", "drums", "Drums", "proposed")], songs(["G", "C", "E", "D"]).slice(0, 2)),
     svc(3, "draft", [], []),
     svc(4, "draft", [], []),

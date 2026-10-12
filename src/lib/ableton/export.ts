@@ -2,6 +2,7 @@
 import { store } from "../store/appStore.ts";
 import type { Repository } from "../store/repository.ts";
 import type { Song } from "../store/types.ts";
+import { songsOf } from "../team/plan.ts";
 import type { Service, SetSong } from "../team/types.ts";
 import { liveStems, stemKey } from "../live/liveEngine.ts";
 import { inspectTemplate, renderAls, type TemplateInfo } from "./als.ts";
@@ -64,7 +65,7 @@ export interface ExportRow { item: SetSong; song: Song | undefined; bpm: number 
 
 /** What the export will contain for each setlist song. Songs without audio are skipped. */
 export function exportRows(svc: Service): ExportRow[] {
-  return svc.setlist.map((item) => {
+  return songsOf(svc).map((item) => {
     const song = item.songId ? store.song(item.songId) : undefined;
     return { item, song, bpm: item.bpm ?? cleanBpm(song?.bpm), meter: item.meter ?? "4/4", stems: song ? liveStems(song).length : 0 };
   });
